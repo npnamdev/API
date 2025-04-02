@@ -1,0 +1,24 @@
+{
+  "name": "API",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/npnamdev/API",
+  "author": "Nguyễn Phương Nam <119719970+npnamdev@users.noreply.github.com>",
+  "license": "MIT",
+  "scripts": {
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "@fastify/sensible": "^6.0.3",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.2.2",
+    "fastify-autoload": "^3.13.0",
+    "fastify-cors": "^6.1.0",
+    "fastify-plugin": "^5.0.1",
+    "fastify-sensible": "^3.2.0",
+    "mongoose": "^8.13.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
