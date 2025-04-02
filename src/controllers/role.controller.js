@@ -19,4 +19,25 @@ async function createRole(req, reply) {
     }
 }
 
-module.exports = { getRoles, createRole };
+async function addPermissionsToRole(req, reply) {
+    try {
+        const { roleId, permissions } = req.body;
+        const updatedRole = await RoleService.addPermissionsToRole(roleId, permissions);
+        return reply.send({ message: 'Permissions added successfully', role: updatedRole });
+    } catch (err) {
+        reply.internalServerError('Error adding permissions to role');
+    }
+}
+
+
+async function removePermissionsFromRole(req, reply) {
+    try {
+        const { roleId, permissions } = req.body;
+        const updatedRole = await RoleService.removePermissionsFromRole(roleId, permissions);
+        return reply.send({ message: 'Permissions removed successfully', role: updatedRole });
+    } catch (err) {
+        reply.internalServerError('Error removing permissions from role');
+    }
+}
+
+module.exports = { getRoles, createRole, addPermissionsToRole, removePermissionsFromRole };

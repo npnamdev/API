@@ -24,4 +24,44 @@ async function createRole({ name, description }) {
     }
 }
 
-module.exports = { getAllRoles, createRole };
+// Cập nhật một vai trò với các quyền
+async function addPermissionsToRole(roleId, permissions) {
+    try {
+        const role = await Role.findById(roleId);
+        if (!role) {
+            throw new Error('Role not found');
+        }
+
+        // Kiểm tra quyền có hợp lệ không
+        const validPermissions = await Permission.find({ '_id': { $in: permissions } });
+        if (validPermissions.length !== permissions.length) {
+            throw new Error('One or more permissions are invalid');
+        }
+
+        role.permissions = permissions;  // Cập nhật quyền cho vai trò
+        await role.save();
+        return role;
+    } catch (err) {
+        throw new Error('Error adding permissions to role');
+    }
+}
+
+// Phương thức để xóa quyền khỏi một vai trò
+async function removePermissionsFromRole(roleId, permissions) {
+    try {
+        const role = await Role.findById(roleId);
+        if (!role) {
+            throw new Error('Role not found');
+        }
+
+        // Xóa quyền khỏi vai trò
+        role.permissions = role.permissions.filter(permission => !permissions.includes(permission.toString()));
+
+        await role.save();
+        return role;
+    } catch (err) {
+        throw new Error('Error removing permissions from role');
+    }
+}
+
+module.exports = { getAllRoles, createRole, addPermissionsToRole, removePermissionsFromRole };

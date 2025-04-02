@@ -1,13 +1,14 @@
 require('dotenv').config();
 const fastify = require('fastify')({ logger: true });
 
-// Đăng ký plugin
 fastify.register(require('./plugins/sensible'));
 fastify.register(require('./plugins/mongoose'));
+fastify.register(require('./plugins/jwt'));
 
-// Đăng ký các routes
 fastify.register(require('./routes/user.route'), { prefix: '/api' });
 fastify.register(require('./routes/role.route'), { prefix: '/api' });
+fastify.register(require('./routes/permission.route'), { prefix: '/api' });
+fastify.register(require('./routes/auth.route'), { prefix: '/api' });
 
 (async () => {
     try {
