@@ -2,7 +2,8 @@ const UserService = require('../services/user.service');
 
 async function getUsers(req, reply) {
     try {
-        const users = await UserService.getAllUsers();
+        const { keyword, status } = req.query;
+        const users = await UserService.getAllUsers(keyword, status);
         return reply.send({ users });
     } catch (err) {
         reply.internalServerError('Error fetching users');

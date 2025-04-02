@@ -1,4 +1,5 @@
 const Role = require('../models/role.model');
+const Permission = require('../models/permission.model');
 
 async function getAllRoles() {
     try {
@@ -64,4 +65,25 @@ async function removePermissionsFromRole(roleId, permissions) {
     }
 }
 
-module.exports = { getAllRoles, createRole, addPermissionsToRole, removePermissionsFromRole };
+
+async function getRolePermissions(roleId) {
+    try {
+        // Lấy tất cả các quyền
+        const allPermissions = await Permission.find();
+
+        // Lấy quyền đã được gán cho vai trò
+        const role = await Role.findById(roleId).populate('permissions');
+        const rolePermissions = role ? role.permissions.map((perm) => perm._id.toString()) : [];
+
+        // Tạo mảng quyền có trạng thái checked
+        return allPermissions.map((perm) => ({
+            _id: perm._id,
+            name: perm.name,
+            checked: rolePermissions.includes(perm._id.toString()) // Đánh dấu nếu vai trò có quyền này
+        }));
+    } catch (err) {
+        throw new Error('Error fetching permissions');
+    }
+};
+
+module.exports = { getAllRoles, createRole, addPermissionsToRole, removePermissionsFromRole, getRolePermissions };

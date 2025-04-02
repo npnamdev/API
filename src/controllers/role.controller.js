@@ -40,4 +40,15 @@ async function removePermissionsFromRole(req, reply) {
     }
 }
 
-module.exports = { getRoles, createRole, addPermissionsToRole, removePermissionsFromRole };
+
+async function getRolePermissions(req, res) {
+    const { roleId } = req.params;
+    try {
+        const permissions = await RoleService.getRolePermissions(roleId);
+        res.json(permissions);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+}
+
+module.exports = { getRoles, createRole, addPermissionsToRole, removePermissionsFromRole, getRolePermissions };

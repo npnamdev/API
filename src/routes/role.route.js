@@ -5,6 +5,7 @@ async function roleRoutes(fastify) {
     fastify.post('/roles', RoleController.createRole);
     fastify.post('/roles/:roleId/permissions', RoleController.addPermissionsToRole);
     fastify.delete('/roles/:roleId/permissions', RoleController.removePermissionsFromRole);
+    fastify.get('/roles/:roleId/permissions', RoleController.getRolePermissions);
 }
 
 module.exports = roleRoutes;
