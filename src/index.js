@@ -1,13 +1,15 @@
 require('dotenv').config();
-const fastify = require('fastify')({ logger: true });
+const fastify = require('fastify')({ logger: false });
 const corsConfig = require('./config/cors');
 // const cookieConfig = require('./config/cookie');
-const authMiddleware = require('./middlewares/auth.middleware');
+// const authMiddleware = require('./middlewares/auth.middleware');
 const fastifyFormbody = require('@fastify/formbody');
 const fastifyCookie = require('@fastify/cookie');
+const multer = require('fastify-multer');
 
 corsConfig(fastify)
 // cookieConfig(fastify);
+fastify.register(multer.contentParser);
 fastify.register(fastifyCookie);
 fastify.register(fastifyFormbody);
 
@@ -29,6 +31,7 @@ fastify.register(require('./routes/user.route'), { prefix: '/api' });
 fastify.register(require('./routes/role.route'), { prefix: '/api' });
 fastify.register(require('./routes/permission.route'), { prefix: '/api' });
 fastify.register(require('./routes/auth.route'), { prefix: '/api' });
+fastify.register(require('./routes/media.route'), { prefix: '/api' });
 
 // Demo api gửi email
 fastify.get('/send-email', async (req, reply) => {
