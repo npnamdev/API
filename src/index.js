@@ -4,10 +4,7 @@ const corsConfig = require('./config/cors');
 const cookieConfig = require('./config/cookie');
 const authMiddleware = require('./middlewares/auth.middleware');
 
-// Cấu hình CORS
-// fastify.register(fastifyCors, corsConfig);
 corsConfig(fastify)
-// Cấu hình Cookie
 cookieConfig(fastify);
 
 fastify.addHook('preHandler', async (req, reply) => {
@@ -21,6 +18,7 @@ fastify.addHook('preHandler', async (req, reply) => {
 fastify.register(require('./plugins/sensible'));
 fastify.register(require('./plugins/mongoose'));
 fastify.register(require('./plugins/jwt'));
+fastify.register(require('./plugins/email'));
 
 // Sử dụng middleware toàn cục
 fastify.addHook('preHandler', authMiddleware);
@@ -30,6 +28,17 @@ fastify.register(require('./routes/user.route'), { prefix: '/api' });
 fastify.register(require('./routes/role.route'), { prefix: '/api' });
 fastify.register(require('./routes/permission.route'), { prefix: '/api' });
 fastify.register(require('./routes/auth.route'), { prefix: '/api' });
+
+// Demo api gửi email
+fastify.get('/send-email', async (req, reply) => {
+    await fastify.sendEmail({
+        to: 'user@example.com',
+        subject: 'Hello!',
+        text: 'This is a test email.',
+        html: '<h1>Hello!</h1><p>This is a test email.</p>',
+    });
+    reply.send({ message: 'Email sent!' });
+});
 
 // Tạo route mẫu để thiết lập cookie
 fastify.get('/api/set-cookie', async (req, reply) => {
@@ -42,6 +51,7 @@ fastify.get('/api/set-cookie', async (req, reply) => {
         })
         .send({ message: 'Cookie set successfully' });
 });
+
 // Route để đọc cookie
 fastify.get('/api/get-cookie', async (req, reply) => {
     const token = req.cookies.token;

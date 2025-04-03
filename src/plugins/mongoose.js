@@ -3,13 +3,10 @@ const mongoose = require('mongoose');
 
 async function mongooseConnector(fastify) {
     try {
-        await mongoose.connect(process.env.MONGO_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
-        fastify.log.info('MongoDB connected');
+        await mongoose.connect(process.env.MONGO_URI);
+        fastify.log.info('🚀 MongoDB connected');
     } catch (err) {
-        fastify.log.error('MongoDB connection error:', err);
+        fastify.log.error('❌ MongoDB connection error:', err);
         process.exit(1);
     }
 }
