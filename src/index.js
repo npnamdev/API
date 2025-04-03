@@ -60,9 +60,9 @@ fastify.get('/api/get-cookie', async (req, reply) => {
 
 (async () => {
     try {
-        await fastify.listen({ port: process.env.PORT });
+        await fastify.listen({ port: process.env.PORT || 8000 });
         console.log(`\n- 🌟 App running at:`);
-        console.log(`- 🚀 Server listening on\x1b[0m \x1b[33mhttp://localhost:${process.env.PORT}\x1b[0m`);
+        console.log(`- 🚀 Server listening on\x1b[0m \x1b[33mhttp://localhost:${process.env.PORT || 8000}\x1b[0m`);
     } catch (err) {
         fastify.log.error(err);
         process.exit(1);
