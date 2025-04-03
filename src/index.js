@@ -11,7 +11,7 @@ const upload = require('./utils/upload.js');
 const cloudinary = require('./utils/cloudinary.js');
 
 fastify.register(fastifyCors, {
-    origin: true,
+    origin: ['http://localhost:3000', 'https://test-cookie-iota.vercel.app'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
@@ -83,6 +83,7 @@ fastify.get('/api/set-cookie', async (req, reply) => {
             secure: process.env.NODE_ENV === 'production',
             sameSite: "None",
             path: '/',
+            domain: 'vercel.app',
             maxAge: 24 * 60 * 60 * 1000,
         })
         .send({ message: 'Cookie set successfully' });
