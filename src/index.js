@@ -1,6 +1,7 @@
 require('dotenv').config();
 const fastify = require('fastify')({ logger: false });
-const corsConfig = require('./config/cors');
+// const corsConfig = require('./config/cors');
+const fastifyCors = require('@fastify/cors');
 // const cookieConfig = require('./config/cookie');
 // const authMiddleware = require('./middlewares/auth.middleware');
 const fastifyFormbody = require('@fastify/formbody');
@@ -9,13 +10,16 @@ const fastifyCookie = require('@fastify/cookie');
 const upload = require('./utils/upload.js');
 const cloudinary = require('./utils/cloudinary.js');
 
-fastify.register(require('@fastify/multipart'));
+fastify.register(fastifyCors, {
+    origin: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+});
 
-corsConfig(fastify)
-// cookieConfig(fastify);
-// fastify.register(multer.contentParser);
 fastify.register(fastifyCookie);
 fastify.register(fastifyFormbody);
+fastify.register(require('@fastify/multipart'));
 
 fastify.post('/upload', { preHandler: upload.single('image') }, async (req, reply) => {
     try {
@@ -77,7 +81,7 @@ fastify.get('/api/set-cookie', async (req, reply) => {
         .setCookie('token', '123456', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: "Lax",
+            sameSite: "None",
             path: '/',
             maxAge: 24 * 60 * 60 * 1000,
         })
