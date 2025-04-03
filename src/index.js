@@ -1,18 +1,22 @@
 require('dotenv').config();
 const fastify = require('fastify')({ logger: true });
 const corsConfig = require('./config/cors');
-const cookieConfig = require('./config/cookie');
+// const cookieConfig = require('./config/cookie');
 const authMiddleware = require('./middlewares/auth.middleware');
+const fastifyFormbody = require('@fastify/formbody');
+const fastifyCookie = require('@fastify/cookie');
 
 corsConfig(fastify)
-cookieConfig(fastify);
+// cookieConfig(fastify);
+fastify.register(fastifyCookie);
+fastify.register(fastifyFormbody);
 
-fastify.addHook('preHandler', async (req, reply) => {
-    if (['/api/login', '/api/register', '/api/set-cookie', '/api/get-cookie'].includes(req.routerPath)) {
-        return;
-    }
-    await authMiddleware(req, reply);
-});
+// fastify.addHook('preHandler', async (req, reply) => {
+//     if (['/api/login', '/api/register', '/api/set-cookie', '/api/get-cookie'].includes(req.routerPath)) {
+//         return;
+//     }
+//     await authMiddleware(req, reply);
+// });
 
 // Đăng ký các plugin khác
 fastify.register(require('./plugins/sensible'));
@@ -42,9 +46,9 @@ fastify.get('/api/set-cookie', async (req, reply) => {
     reply
         .setCookie('token', '123456', {
             httpOnly: true,
-            secure: false, // Đặt thành true nếu dùng HTTPS
-            sameSite: 'lax',
-            maxAge: 60 * 60 * 24 // Cookie tồn tại trong 1 ngày
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            path: '/',
         })
         .send({ message: 'Cookie set successfully' });
 });
