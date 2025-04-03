@@ -26,7 +26,7 @@ fastify.post('/upload', { preHandler: upload.single('image') }, async (req, repl
         }
 
         const result = await cloudinary.uploader.upload_stream(
-            { folder: 'uploads' }, 
+            { folder: 'uploads' },
             (error, result) => {
                 if (error) {
                     return reply.status(500).send({ message: 'Upload failed', error });
@@ -72,19 +72,18 @@ fastify.get('/send-email', async (req, reply) => {
     reply.send({ message: 'Email sent!' });
 });
 
-// Tạo route mẫu để thiết lập cookie
 fastify.get('/api/set-cookie', async (req, reply) => {
     reply
         .setCookie('token', '123456', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
+            sameSite: "Lax",
             path: '/',
+            maxAge: 24 * 60 * 60 * 1000,
         })
         .send({ message: 'Cookie set successfully' });
 });
 
-// Route để đọc cookie
 fastify.get('/api/get-cookie', async (req, reply) => {
     const token = req.cookies.token;
     return { token };
