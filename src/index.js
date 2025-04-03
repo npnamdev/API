@@ -8,7 +8,7 @@ corsConfig(fastify)
 cookieConfig(fastify);
 
 fastify.addHook('preHandler', async (req, reply) => {
-    if (['/api/login', '/api/register'].includes(req.routerPath)) {
+    if (['/api/login', '/api/register', '/api/set-cookie', '/api/get-cookie'].includes(req.routerPath)) {
         return;
     }
     await authMiddleware(req, reply);
@@ -19,9 +19,6 @@ fastify.register(require('./plugins/sensible'));
 fastify.register(require('./plugins/mongoose'));
 fastify.register(require('./plugins/jwt'));
 fastify.register(require('./plugins/email'));
-
-// Sử dụng middleware toàn cục
-fastify.addHook('preHandler', authMiddleware);
 
 // Đăng ký các route
 fastify.register(require('./routes/user.route'), { prefix: '/api' });
