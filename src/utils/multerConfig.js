@@ -1,4 +1,3 @@
-// src/utils/multerConfig.js
 const multer = require('fastify-multer');
 const path = require('path');
 

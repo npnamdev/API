@@ -5,13 +5,41 @@ const corsConfig = require('./config/cors');
 // const authMiddleware = require('./middlewares/auth.middleware');
 const fastifyFormbody = require('@fastify/formbody');
 const fastifyCookie = require('@fastify/cookie');
-const multer = require('fastify-multer');
+// const multer = require('fastify-multer');
+const upload = require('./utils/upload.js');
+const cloudinary = require('./utils/cloudinary.js');
+
+fastify.register(require('@fastify/multipart'));
 
 corsConfig(fastify)
 // cookieConfig(fastify);
-fastify.register(multer.contentParser);
+// fastify.register(multer.contentParser);
 fastify.register(fastifyCookie);
 fastify.register(fastifyFormbody);
+
+fastify.post('/upload', { preHandler: upload.single('image') }, async (req, reply) => {
+    try {
+        const file = req.file;
+
+        if (!file) {
+            return reply.status(400).send({ message: 'No file uploaded' });
+        }
+
+        const result = await cloudinary.uploader.upload_stream(
+            { folder: 'uploads' }, 
+            (error, result) => {
+                if (error) {
+                    return reply.status(500).send({ message: 'Upload failed', error });
+                }
+                return reply.status(200).send({ message: 'Upload successful', url: result.secure_url });
+            }
+        );
+
+        result.end(file.buffer);
+    } catch (error) {
+        reply.status(500).send({ message: 'Server error', error });
+    }
+});
 
 // fastify.addHook('preHandler', async (req, reply) => {
 //     if (['/api/login', '/api/register', '/api/set-cookie', '/api/get-cookie'].includes(req.routerPath)) {
