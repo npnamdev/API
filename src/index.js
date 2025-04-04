@@ -1,22 +1,8 @@
 require('dotenv').config();
 const fastify = require('fastify')({ logger: false });
-const fastifyCors = require('@fastify/cors');
-const fastifyFormbody = require('@fastify/formbody');
-const fastifyCookie = require('@fastify/cookie');
 
 const cloudinary = require('cloudinary').v2;
 const streamifier = require('streamifier');
-
-fastify.register(fastifyCors, {
-    origin: ['http://localhost:5173', 'https://test-cookie-iota.vercel.app', "https://app.wedly.info", "https://wedly.info"],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
-});
-
-const fastifyMultipart = require('@fastify/multipart');
-fastify.register(fastifyMultipart);
-
 
 // Cấu hình Cloudinary
 cloudinary.config({
@@ -24,6 +10,29 @@ cloudinary.config({
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+fastify.register(require('@fastify/cors'), {
+    origin: ['http://localhost:5173', 'https://test-cookie-iota.vercel.app', "https://app.wedly.info", "https://wedly.info"],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+});
+fastify.register(require('@fastify/multipart'));
+fastify.register(require('@fastify/cookie'));
+fastify.register(require('@fastify/formbody'));
+
+// Đăng ký các plugin khác
+fastify.register(require('./plugins/sensible'));
+fastify.register(require('./plugins/mongoose'));
+fastify.register(require('./plugins/jwt'));
+fastify.register(require('./plugins/email'));
+
+// Đăng ký các route
+fastify.register(require('./routes/user.route'), { prefix: '/api' });
+fastify.register(require('./routes/role.route'), { prefix: '/api' });
+fastify.register(require('./routes/permission.route'), { prefix: '/api' });
+fastify.register(require('./routes/auth.route'), { prefix: '/api' });
+fastify.register(require('./routes/media.route'), { prefix: '/api' });
 
 // Route upload
 fastify.post('/upload', async function (req, reply) {
@@ -55,24 +64,6 @@ fastify.post('/upload', async function (req, reply) {
         reply.code(500).send({ error: 'Upload failed', details: err });
     }
 });
-
-
-
-fastify.register(fastifyCookie);
-fastify.register(fastifyFormbody);
-
-// Đăng ký các plugin khác
-fastify.register(require('./plugins/sensible'));
-fastify.register(require('./plugins/mongoose'));
-fastify.register(require('./plugins/jwt'));
-fastify.register(require('./plugins/email'));
-
-// Đăng ký các route
-fastify.register(require('./routes/user.route'), { prefix: '/api' });
-fastify.register(require('./routes/role.route'), { prefix: '/api' });
-fastify.register(require('./routes/permission.route'), { prefix: '/api' });
-fastify.register(require('./routes/auth.route'), { prefix: '/api' });
-fastify.register(require('./routes/media.route'), { prefix: '/api' });
 
 fastify.get('/api/set-cookie', async (req, reply) => {
     reply

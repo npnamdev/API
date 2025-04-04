@@ -52,18 +52,6 @@ const createMedia = async (req, reply) => {
   }
 };
 
-// Create a new media
-// const createMedia = async (req, reply) => {
-//   try {
-//     const { url, secure_url, public_id, format, resource_type, width, height, bytes, original_filename } = req.body;
-//     const newMedia = new Media({ url, secure_url, public_id, format, resource_type, width, height, bytes, original_filename });
-//     await newMedia.save();
-//     reply.status(201).send(newMedia); // Return the created media
-//   } catch (err) {
-//     reply.status(500).send({ message: 'Error creating media', error: err });
-//   }
-// };
-
 // Get all media
 const getAllMedia = async (req, reply) => {
   try {
