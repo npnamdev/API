@@ -1,35 +1,31 @@
 const cloudinary = require('cloudinary').v2;
 const Media = require('../models/media.model');
+const streamifier = require('streamifier');
 
 // Create a new media and upload to Cloudinary
 const createMedia = async (req, reply) => {
   try {
-    // Kiểm tra xem file có được gửi lên không
-    if (!req.isMultipart()) {
-      return reply.status(400).send({ message: 'No file uploaded' });
-    }
-
-    // Lấy file từ request
+    if (!req.isMultipart()) { return reply.status(400).send({ message: 'No file uploaded' }); }
     const data = await req.file();
+    const fileBuffer = await data.toBuffer();
 
-    // Upload file lên Cloudinary
-    const uploadResult = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
-        { folder: 'uploads' }, // Thư mục trong Cloudinary
-        (error, result) => {
-          if (result) {
-            resolve(result);
-          } else {
-            reject(error);
+    const uploadStream = () =>
+      new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'uploads' }, 
+          (error, result) => {
+            if (result) {
+              resolve(result);
+            } else {
+              reject(error);
+            }
           }
-        }
-      ).end(data.file); // End stream with the file data
-    });
+        );
+        streamifier.createReadStream(fileBuffer).pipe(stream);
+      });
 
-    // Lấy thông tin trả về từ Cloudinary
+    const reuploadResultsult = await uploadStream();
     const { url, secure_url, public_id, format, resource_type, width, height, bytes, original_filename } = uploadResult;
-
-    // Tạo mới đối tượng Media và lưu vào MongoDB
     const newMedia = new Media({
       url,
       secure_url,
@@ -42,10 +38,8 @@ const createMedia = async (req, reply) => {
       original_filename
     });
 
-    // Lưu vào cơ sở dữ liệu
     await newMedia.save();
 
-    // Trả về thông tin của media vừa tạo
     reply.status(201).send(newMedia);
   } catch (err) {
     reply.status(500).send({ message: 'Error creating media', error: err });
