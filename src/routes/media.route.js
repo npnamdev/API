@@ -1,14 +1,12 @@
 const mediaController = require('../controllers/media.controller');
-const multer = require('fastify-multer');
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
 
 async function mediaRoutes(fastify) {
-    fastify.post('/media', { preHandler: upload.single('image') }, mediaController.createMedia);
-    fastify.get('/media', mediaController.getAllMedia);
-    fastify.get('/media/:id', mediaController.getMediaById);
-    fastify.put('/media/:id', mediaController.updateMedia);
-    fastify.delete('/media/:id', mediaController.deleteMedia);
+    fastify.post('/media', mediaController.createMedia); // Create a new media
+    fastify.get('/media', mediaController.getAllMedia); // Get all media
+    fastify.get('/media/:id', mediaController.getMediaById); // Get a media by ID
+    fastify.put('/media/:id', mediaController.updateMediaById); // Update a media by ID
+    fastify.delete('/media/:id', mediaController.deleteMediaById); // Delete a media by ID
 }
 
 module.exports = mediaRoutes;
+

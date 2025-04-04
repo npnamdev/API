@@ -1,20 +1,22 @@
 const mongoose = require('mongoose');
 
-const mediaSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    path: { type: String, required: true },
-    type: {
-        type: String,
-        enum: ['image', 'video', 'document', 'audio', 'other'],
-        required: true
-    },
-    size: { type: Number, required: true },
-    format: { type: String, required: true },
-    description: { type: String, default: '' },
-    status: { type: String, enum: ['active', 'inactive'], default: 'active' },
-    tags: [{ type: String }]
-}, { timestamps: true });
+const MediaSchema = new mongoose.Schema({
+    url: { type: String, required: true },
+    secure_url: { type: String },
+    public_id: { type: String, required: true },
+    format: { type: String },
+    resource_type: { type: String },
+    width: { type: Number },
+    height: { type: Number },
+    bytes: { type: Number },
+    original_filename: { type: String },
+}, {
+    timestamps: true
+});
 
-const Media = mongoose.model('Media', mediaSchema);
+const Media = mongoose.model('Media', MediaSchema);
 
 module.exports = Media;
+
+
+

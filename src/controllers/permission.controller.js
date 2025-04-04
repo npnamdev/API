@@ -1,4 +1,3 @@
-// src/controllers/permission.controller.js
 const PermissionService = require('../services/permission.service');
 
 async function getPermissions(req, reply) {

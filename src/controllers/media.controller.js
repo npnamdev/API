@@ -1,102 +1,73 @@
-// src/controllers/media.controller.js
-
 const Media = require('../models/media.model');
-const cloudinary = require('../utils/cloudinary');
 
-// Tạo một media mới
-async function createMedia(req, reply) {
-    try {
-        const file = req.file;
-        
+// Create a new media
+const createMedia = async (req, reply) => {
+  try {
+    const { url, secure_url, public_id, format, resource_type, width, height, bytes, original_filename } = req.body;
+    const newMedia = new Media({ url, secure_url, public_id, format, resource_type, width, height, bytes, original_filename });
+    await newMedia.save();
+    reply.status(201).send(newMedia); // Return the created media
+  } catch (err) {
+    reply.status(500).send({ message: 'Error creating media', error: err });
+  }
+};
 
-        console.log("check file", file);
-        
+// Get all media
+const getAllMedia = async (req, reply) => {
+  try {
+    const medias = await Media.find(); // Fetch all media
+    reply.status(200).send(medias);
+  } catch (err) {
+    reply.status(500).send({ message: 'Error fetching media', error: err });
+  }
+};
 
-        // Upload file lên Cloudinary
-        // const result = await cloudinary.uploader.upload(file.path, {
-        //     folder: 'media',
-        // });
-
-        // // Tạo media mới trong MongoDB
-        // const newMedia = new Media({
-        //     name: file.originalname,
-        //     path: result.secure_url, // Lưu URL file từ Cloudinary
-        //     type: file.mimetype.split('/')[0], // Ví dụ: image, video
-        //     size: file.size,
-        //     format: file.mimetype.split('/')[1],
-        //     description: req.body.description || '',
-        //     status: 'active', // Bạn có thể thay đổi sau
-        //     tags: req.body.tags || [],
-        // });
-
-        const newMedia = "ok";
-
-        // Lưu vào DB
-        // await newMedia.save();
-        return reply.code(201).send({ message: 'Media created successfully', media: newMedia });
-    } catch (err) {
-        console.error(err);
-        return reply.code(500).send({ message: 'Error uploading media' });
+// Get a media by ID
+const getMediaById = async (req, reply) => {
+  try {
+    const media = await Media.findById(req.params.id);
+    if (!media) {
+      return reply.status(404).send({ message: 'Media not found' });
     }
-}
+    reply.status(200).send(media);
+  } catch (err) {
+    reply.status(500).send({ message: 'Error fetching media', error: err });
+  }
+};
 
-// Lấy tất cả media
-async function getAllMedia(req, reply) {
-    try {
-        const media = await Media.find();
-        return reply.send({ media });
-    } catch (err) {
-        console.error(err);
-        return reply.code(500).send({ message: 'Error fetching media' });
+// Update a media by ID
+const updateMediaById = async (req, reply) => {
+  try {
+    const { url, secure_url, public_id, format, resource_type, width, height, bytes, original_filename } = req.body;
+    const updatedMedia = await Media.findByIdAndUpdate(req.params.id, {
+      url, secure_url, public_id, format, resource_type, width, height, bytes, original_filename
+    }, { new: true }); // `new: true` to return the updated document
+    if (!updatedMedia) {
+      return reply.status(404).send({ message: 'Media not found' });
     }
-}
+    reply.status(200).send(updatedMedia);
+  } catch (err) {
+    reply.status(500).send({ message: 'Error updating media', error: err });
+  }
+};
 
-// Lấy media theo ID
-async function getMediaById(req, reply) {
-    try {
-        const media = await Media.findById(req.params.id);
-        if (!media) {
-            return reply.code(404).send({ message: 'Media not found' });
-        }
-        return reply.send({ media });
-    } catch (err) {
-        console.error(err);
-        return reply.code(500).send({ message: 'Error fetching media' });
+// Delete a media by ID
+const deleteMediaById = async (req, reply) => {
+  try {
+    const deletedMedia = await Media.findByIdAndDelete(req.params.id);
+    if (!deletedMedia) {
+      return reply.status(404).send({ message: 'Media not found' });
     }
-}
+    reply.status(200).send({ message: 'Media deleted successfully' });
+  } catch (err) {
+    reply.status(500).send({ message: 'Error deleting media', error: err });
+  }
+};
 
-// Cập nhật media
-async function updateMedia(req, reply) {
-    try {
-        const updatedData = req.body;
-        const media = await Media.findByIdAndUpdate(req.params.id, updatedData, { new: true });
-        if (!media) {
-            return reply.code(404).send({ message: 'Media not found' });
-        }
-        return reply.send({ message: 'Media updated successfully', media });
-    } catch (err) {
-        console.error(err);
-        return reply.code(500).send({ message: 'Error updating media' });
-    }
-}
-
-// Xoá media
-async function deleteMedia(req, reply) {
-    try {
-        const media = await Media.findByIdAndDelete(req.params.id);
-        if (!media) {
-            return reply.code(404).send({ message: 'Media not found' });
-        }
-
-        // Xoá media từ Cloudinary
-        const publicId = media.path.split('/').pop().split('.')[0]; // Lấy public_id từ URL
-        await cloudinary.uploader.destroy(publicId);
-
-        return reply.send({ message: 'Media deleted successfully' });
-    } catch (err) {
-        console.error(err);
-        return reply.code(500).send({ message: 'Error deleting media' });
-    }
-}
-
-module.exports = { createMedia, getAllMedia, getMediaById, updateMedia, deleteMedia };
+module.exports = {
+  createMedia,
+  getAllMedia,
+  getMediaById,
+  updateMediaById,
+  deleteMediaById
+};
