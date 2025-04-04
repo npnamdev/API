@@ -36,8 +36,8 @@ fastify.get('/api/set-cookie', async (req, reply) => {
             secure: true,
             sameSite: "None",
             path: '/',
-            maxAge: 24 * 60 * 60 * 1000,
-            // domain: ".vercel.app"
+            domain: '.wedly.info', // Quan trọng
+            maxAge: 24 * 60 * 60
         })
         .send({ message: 'Cookie set successfully' });
 });
