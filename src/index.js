@@ -17,7 +17,12 @@ fastify.register(require('@fastify/cors'), {
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 });
-fastify.register(require('@fastify/multipart'));
+// fastify.register(require('@fastify/multipart'));
+fastify.register(require('@fastify/multipart'), {
+    limits: {
+        fileSize: 10 * 1024 * 1024 // 10MB
+    }
+});
 fastify.register(require('@fastify/cookie'));
 fastify.register(require('@fastify/formbody'));
 
