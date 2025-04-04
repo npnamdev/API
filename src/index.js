@@ -5,7 +5,7 @@ const fastifyFormbody = require('@fastify/formbody');
 const fastifyCookie = require('@fastify/cookie');
 
 fastify.register(fastifyCors, {
-    origin: ['http://localhost:5173', 'https://test-cookie-iota.vercel.app', "https://app.wedly.info"],
+    origin: ['http://localhost:5173', 'https://test-cookie-iota.vercel.app', "https://app.wedly.info", "https://wedly.info"],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
