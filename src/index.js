@@ -4,6 +4,9 @@ const fastifyCors = require('@fastify/cors');
 const fastifyFormbody = require('@fastify/formbody');
 const fastifyCookie = require('@fastify/cookie');
 
+const cloudinary = require('cloudinary').v2;
+const streamifier = require('streamifier');
+
 fastify.register(fastifyCors, {
     origin: ['http://localhost:5173', 'https://test-cookie-iota.vercel.app', "https://app.wedly.info", "https://wedly.info"],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -11,9 +14,52 @@ fastify.register(fastifyCors, {
     credentials: true
 });
 
+const fastifyMultipart = require('@fastify/multipart');
+fastify.register(fastifyMultipart);
+
+
+// Cấu hình Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Route upload
+fastify.post('/upload', async function (req, reply) {
+    const data = await req.file(); // nhận file
+
+    const fileBuffer = await data.toBuffer(); // đọc toàn bộ file thành Buffer
+
+    const uploadStream = () =>
+        new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                { folder: 'uploads' }, // thay folder nếu muốn
+                (error, result) => {
+                    if (result) {
+                        resolve(result);
+                    } else {
+                        reject(error);
+                    }
+                }
+            );
+
+            // Đẩy buffer vào stream
+            streamifier.createReadStream(fileBuffer).pipe(stream);
+        });
+
+    try {
+        const result = await uploadStream();
+        return { url: result.secure_url };
+    } catch (err) {
+        reply.code(500).send({ error: 'Upload failed', details: err });
+    }
+});
+
+
+
 fastify.register(fastifyCookie);
 fastify.register(fastifyFormbody);
-fastify.register(require('@fastify/multipart'));
 
 // Đăng ký các plugin khác
 fastify.register(require('./plugins/sensible'));
@@ -36,7 +82,7 @@ fastify.get('/api/set-cookie', async (req, reply) => {
             secure: true,
             sameSite: "None",
             path: '/',
-            domain: '.wedly.info', // Quan trọng
+            domain: '.wedly.info',
             maxAge: 24 * 60 * 60
         })
         .send({ message: 'Cookie set successfully' });
