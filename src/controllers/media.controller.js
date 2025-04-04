@@ -24,7 +24,7 @@ const createMedia = async (req, reply) => {
         streamifier.createReadStream(fileBuffer).pipe(stream);
       });
 
-    const reuploadResultsult = await uploadStream();
+    const uploadResult = await uploadStream();
     const { url, secure_url, public_id, format, resource_type, width, height, bytes, original_filename } = uploadResult;
     const newMedia = new Media({
       url,
