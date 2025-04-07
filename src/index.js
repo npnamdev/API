@@ -17,12 +17,47 @@ fastify.register(require('@fastify/cors'), {
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 });
-// fastify.register(require('@fastify/multipart'));
+
 fastify.register(require('@fastify/multipart'), {
     limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB
+        fileSize: 10 * 1024 * 1024 
     }
 });
+
+
+const path = require("path");
+fastify.register(require("@fastify/static"), {
+    root: path.join(__dirname, "public"),
+    prefix: '/',
+});
+
+fastify.get("/", (req, reply) => {
+    return reply.sendFile("index.html");
+});
+
+// fastify.register(require("fastify-socket.io"));
+fastify.register(require("fastify-socket.io"), {
+    cors: {
+        origin: ['http://localhost:5173', 'https://test-cookie-iota.vercel.app', "https://app.wedly.info", "https://wedly.info"],
+        methods: ["GET", "POST"],
+        credentials: true
+    }
+});
+
+fastify.ready().then(() => {
+    fastify.io.on("connection", (socket) => {
+        console.log("A client connected:", socket.id);
+
+        socket.on("notify", (data) => {
+            console.log("Đã nhận thông báo từ client:", data);
+        });
+
+        socket.on("disconnect", () => {
+            console.log("Client disconnected:", socket.id);
+        });
+    });
+})
+
 fastify.register(require('@fastify/cookie'));
 fastify.register(require('@fastify/formbody'));
 
@@ -32,6 +67,8 @@ fastify.register(require('./plugins/mongoose'));
 fastify.register(require('./plugins/jwt'));
 fastify.register(require('./plugins/email'));
 
+
+fastify.register(require('./routes/notification.route'), { prefix: '/api' });
 // Đăng ký các route
 fastify.register(require('./routes/user.route'), { prefix: '/api' });
 fastify.register(require('./routes/role.route'), { prefix: '/api' });

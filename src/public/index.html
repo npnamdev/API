@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Fastify + Socket.IO</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        #notificationList {
+            margin-top: 20px;
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #notificationList li {
+            background-color: #f4f4f4;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #notifyBtn {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #notifyBtn:hover {
+            background-color: #0056b3;
+        }
+
+        .deleteBtn {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .deleteBtn:hover {
+            background-color: darkred;
+        }
+
+        /* Các lớp CSS cho màu sắc thông báo */
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Fastify + Socket.IO</h1>
+
+    <button id="notifyBtn">Gửi thông báo</button>
+
+    <ul id="notificationList"></ul>
+
+    <script>
+        const socket = io("https://bookish-train-66rxj97jr5v2rqwg-3000.app.github.dev");
+
+        socket.on("connect", () => {
+            console.log("Connected to server, id:", socket.id);
+        });
+
+        socket.on("notify", (notification) => {
+            console.log("Received notification:", notification);
+            const notificationList = document.getElementById("notificationList");
+            const li = document.createElement("li");
+            li.id = notification._id;
+            li.classList.add(notification.type); // Thêm class loại thông báo vào li
+            li.innerHTML = `
+                Message: ${notification.message} - Type: ${notification.type} - Status: ${notification.status}
+                <button class="deleteBtn" onclick="deleteNotification('${notification._id}')">Xóa</button>
+            `;
+            notificationList.appendChild(li);
+        });
+
+        socket.on("deleteNotify", (id) => {
+            const notificationItem = document.getElementById(id);
+            if (notificationItem) {
+                notificationItem.remove();
+            }
+        });
+
+        // Mảng thông báo ngẫu nhiên
+        const randomMessages = [
+            { message: 'Thông báo thông thường', type: 'info' },
+            { message: 'Thông báo thành công', type: 'success' },
+            { message: 'Thông báo cảnh báo', type: 'warning' },
+            { message: 'Thông báo lỗi', type: 'error' }
+        ];
+
+        // Gửi sự kiện về server khi ấn nút
+        const btn = document.getElementById("notifyBtn");
+        btn.addEventListener("click", async () => {
+            // Chọn ngẫu nhiên một thông báo từ mảng
+            const randomNotification = randomMessages[Math.floor(Math.random() * randomMessages.length)];
+
+            const response = await fetch('/api/notifications', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(randomNotification),
+            });
+
+            const data = await response.json();
+            console.log("Notification created:", data);
+        });
+
+        // Lấy danh sách thông báo khi tải trang
+        async function getNotifications() {
+            const response = await fetch('/api/notifications');
+            const notifications = await response.json();
+
+            const notificationList = document.getElementById("notificationList");
+            notificationList.innerHTML = '';
+            notifications.forEach(notification => {
+                const li = document.createElement('li');
+                li.id = notification._id;
+                li.classList.add(notification.type); // Thêm class loại thông báo vào li
+                li.innerHTML = `
+                    Message: ${notification.message} - Type: ${notification.type} - Status: ${notification.status}
+                    <button class="deleteBtn" onclick="deleteNotification('${notification._id}')">Xóa</button>
+                `;
+                notificationList.appendChild(li);
+            });
+        }
+
+        // Tải danh sách thông báo khi trang được load
+        getNotifications();
+
+        // Hàm xóa thông báo
+        async function deleteNotification(id) {
+            const response = await fetch(`/api/notifications/${id}`, {
+                method: 'DELETE'
+            });
+
+            const data = await response.json();
+            console.log("Notification deleted:", data);
+        }
+    </script>
+</body>
+
+</html>
