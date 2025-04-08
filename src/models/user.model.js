@@ -2,34 +2,46 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
 const userSchema = new mongoose.Schema({
+    // Đăng nhập & xác thực
     username: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    emailVerified: { type: Boolean, default: false },
+    verificationToken: { type: String },
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
+
+    // Thông tin cá nhân
     fullName: { type: String, required: true },
-    role: { type: mongoose.Schema.Types.ObjectId, ref: 'Role', required: true },
+    gender: { type: String, enum: ['male', 'female', 'other'], default: 'other' },
+    dateOfBirth: { type: Date },
+    phoneNumber: { type: String, trim: true },
     avatarUrl: { type: String, trim: true },
-    bio: { type: String, trim: true },
-    coursesEnrolled: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
-    purchasedCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
-    isActive: { type: Boolean, default: true },
-    lastLogin: { type: Date, default: Date.now },
-    createdAt: { type: Date, default: Date.now },
-    updatedAt: { type: Date, default: Date.now }
+
+    // Địa chỉ
+    address: {
+        street: { type: String, trim: true },
+        city: { type: String, trim: true },
+        state: { type: String, trim: true },
+        postalCode: { type: String, trim: true },
+        country: { type: String, trim: true }
+    },
+
+    // Phân quyền và trạng thái
+    role: { type: mongoose.Schema.Types.ObjectId, ref: 'Role', required: true },
+    isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
 
-// Mã hóa mật khẩu trước khi lưu
 userSchema.pre('save', async function (next) {
     if (!this.isModified('password')) return next();
     this.password = await bcrypt.hash(this.password, 10);
     next();
 });
 
-// Xác minh mật khẩu
 userSchema.methods.comparePassword = async function (password) {
     return await bcrypt.compare(password, this.password);
 }
-
 
 const User = mongoose.model('User', userSchema);
 

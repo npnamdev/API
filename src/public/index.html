@@ -85,7 +85,11 @@
     <ul id="notificationList"></ul>
 
     <script>
-        const socket = io("https://bookish-train-66rxj97jr5v2rqwg-3000.app.github.dev");
+        // const socket = io("https://bookish-train-66rxj97jr5v2rqwg-3000.app.github.dev");
+
+        const socketUrl = window.location.hostname === "localhost" || window.location.hostname.includes("github.dev") ? "http://localhost:3000"
+            : "http://wedly.info";
+        const socket = io(socketUrl);
 
         socket.on("connect", () => {
             console.log("Connected to server, id:", socket.id);
