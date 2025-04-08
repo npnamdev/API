@@ -1,93 +1,35 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 
 <head>
+    <meta charset="UTF-8">
     <title>Fastify + Socket.IO</title>
     <script src="/socket.io/socket.io.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-
-        #notificationList {
-            margin-top: 20px;
-            list-style-type: none;
-            padding: 0;
-        }
-
-        #notificationList li {
-            background-color: #f4f4f4;
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        #notifyBtn {
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        #notifyBtn:hover {
-            background-color: #0056b3;
-        }
-
-        .deleteBtn {
-            background-color: red;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
-            border-radius: 3px;
-        }
-
-        .deleteBtn:hover {
-            background-color: darkred;
-        }
-
-        /* Các lớp CSS cho màu sắc thông báo */
-        .info {
-            background-color: #d1ecf1;
-            color: #0c5460;
-        }
-
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .warning {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
-<body>
-    <h1>Fastify + Socket.IO</h1>
+<body class="bg-gray-100 min-h-screen p-4 sm:p-6 font-sans">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-2xl sm:text-3xl font-bold text-center mb-4 sm:mb-6 text-blue-600">
+            Fastify + Socket.IO
+        </h1>
 
-    <button id="notifyBtn">Gửi thông báo</button>
+        <div class="flex justify-center mb-5">
+            <button id="notifyBtn"
+                class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded shadow text-base sm:text-lg">
+                Gửi thông báo
+            </button>
+        </div>
 
-    <ul id="notificationList"></ul>
+        <ul id="notificationList" class="space-y-3">
+            <!-- Notifications will be inserted here -->
+        </ul>
+    </div>
 
     <script>
-        // const socket = io("https://bookish-train-66rxj97jr5v2rqwg-3000.app.github.dev");
-
-        const socketUrl = window.location.hostname === "localhost" || window.location.hostname.includes("github.dev") ? "http://localhost:3000"
+        const socketUrl = window.location.hostname === "localhost" || window.location.hostname.includes("github.dev")
+            ? "http://localhost:3000"
             : "https://api.wedly.info";
         const socket = io(socketUrl);
 
@@ -96,26 +38,22 @@
         });
 
         socket.on("notify", (notification) => {
-            console.log("Received notification:", notification);
             const notificationList = document.getElementById("notificationList");
             const li = document.createElement("li");
             li.id = notification._id;
-            li.classList.add(notification.type); // Thêm class loại thông báo vào li
+            li.className = getNotificationClass(notification.type) + " flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 rounded shadow border gap-2";
             li.innerHTML = `
-                Message: ${notification.message} - Type: ${notification.type} - Status: ${notification.status}
-                <button class="deleteBtn" onclick="deleteNotification('${notification._id}')">Xóa</button>
-            `;
+        <span><strong>${notification.type.toUpperCase()}</strong>: ${notification.message} <em class="text-xs text-gray-600 ml-1">(${notification.status})</em></span>
+        <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm self-end sm:self-auto" onclick="deleteNotification('${notification._id}')">Xóa</button>
+      `;
             notificationList.appendChild(li);
         });
 
         socket.on("deleteNotify", (id) => {
             const notificationItem = document.getElementById(id);
-            if (notificationItem) {
-                notificationItem.remove();
-            }
+            if (notificationItem) notificationItem.remove();
         });
 
-        // Mảng thông báo ngẫu nhiên
         const randomMessages = [
             { message: 'Thông báo thông thường', type: 'info' },
             { message: 'Thông báo thành công', type: 'success' },
@@ -123,54 +61,56 @@
             { message: 'Thông báo lỗi', type: 'error' }
         ];
 
-        // Gửi sự kiện về server khi ấn nút
         const btn = document.getElementById("notifyBtn");
         btn.addEventListener("click", async () => {
-            // Chọn ngẫu nhiên một thông báo từ mảng
             const randomNotification = randomMessages[Math.floor(Math.random() * randomMessages.length)];
-
             const response = await fetch('/api/notifications', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(randomNotification),
             });
-
             const data = await response.json();
             console.log("Notification created:", data);
         });
 
-        // Lấy danh sách thông báo khi tải trang
         async function getNotifications() {
             const response = await fetch('/api/notifications');
             const notifications = await response.json();
-
             const notificationList = document.getElementById("notificationList");
             notificationList.innerHTML = '';
             notifications.forEach(notification => {
                 const li = document.createElement('li');
                 li.id = notification._id;
-                li.classList.add(notification.type); // Thêm class loại thông báo vào li
+                li.className = getNotificationClass(notification.type) + " flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 rounded shadow border gap-2";
                 li.innerHTML = `
-                    Message: ${notification.message} - Type: ${notification.type} - Status: ${notification.status}
-                    <button class="deleteBtn" onclick="deleteNotification('${notification._id}')">Xóa</button>
-                `;
+          <span><strong>${notification.type.toUpperCase()}</strong>: ${notification.message} <em class="text-xs text-gray-600 ml-1">(${notification.status})</em></span>
+          <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm self-end sm:self-auto" onclick="deleteNotification('${notification._id}')">Xóa</button>
+        `;
                 notificationList.appendChild(li);
             });
         }
 
-        // Tải danh sách thông báo khi trang được load
         getNotifications();
 
-        // Hàm xóa thông báo
         async function deleteNotification(id) {
-            const response = await fetch(`/api/notifications/${id}`, {
-                method: 'DELETE'
-            });
-
+            const response = await fetch(`/api/notifications/${id}`, { method: 'DELETE' });
             const data = await response.json();
             console.log("Notification deleted:", data);
+        }
+
+        function getNotificationClass(type) {
+            switch (type) {
+                case 'info':
+                    return 'bg-blue-100 text-blue-800 border-blue-300';
+                case 'success':
+                    return 'bg-green-100 text-green-800 border-green-300';
+                case 'warning':
+                    return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+                case 'error':
+                    return 'bg-red-100 text-red-800 border-red-300';
+                default:
+                    return 'bg-gray-100 text-gray-800 border-gray-300';
+            }
         }
     </script>
 </body>
