@@ -1,11 +1,13 @@
-const RoleController = require('../controllers/role.controller');
+const roleController = require('../controllers/role.controller');
 
 async function roleRoutes(fastify) {
-    fastify.get('/roles', RoleController.getRoles);
-    fastify.post('/roles', RoleController.createRole);
-    fastify.post('/roles/:roleId/permissions', RoleController.addPermissionsToRole);
-    fastify.delete('/roles/:roleId/permissions', RoleController.removePermissionsFromRole);
-    fastify.get('/roles/:roleId/permissions', RoleController.getRolePermissions);
+    fastify.post('/roles', roleController.createRole);
+    fastify.get('/roles', roleController.getAllRoles);
+    fastify.get('/roles/:id', roleController.getRoleById);
+    fastify.get('/roles/:id/permissions', roleController.getRoleById);
+    fastify.put('/roles/:id', roleController.updateRoleById);
+    fastify.delete('/roles/:id', roleController.deleteRoleById);
+
 }
 
 module.exports = roleRoutes;

@@ -184,4 +184,3 @@ exports.getMe = async (request, reply) => {
         reply.internalServerError(error.message || 'Internal Server Error');
     }
 };
-

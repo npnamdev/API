@@ -88,7 +88,7 @@
         // const socket = io("https://bookish-train-66rxj97jr5v2rqwg-3000.app.github.dev");
 
         const socketUrl = window.location.hostname === "localhost" || window.location.hostname.includes("github.dev") ? "http://localhost:3000"
-            : "http://wedly.info";
+            : "http://api.wedly.info";
         const socket = io(socketUrl);
 
         socket.on("connect", () => {

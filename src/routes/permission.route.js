@@ -1,9 +1,11 @@
-const PermissionController = require('../controllers/permission.controller');
+const permissionController = require('../controllers/permission.controller');
 
 async function permissionRoutes(fastify) {
-    fastify.get('/permissions', PermissionController.getPermissions);
-    fastify.post('/permissions', PermissionController.createPermission);
-    fastify.delete('/permissions/:permissionId', PermissionController.deletePermission);  
+    fastify.get('/permissions', permissionController.getPermissions);
+    fastify.get('/permissions/:id', permissionController.getPermissionById);
+    fastify.post('/permissions', permissionController.createPermission);
+    fastify.put('/permissions/:id', permissionController.updatePermission);
+    fastify.delete('/permissions/:id', permissionController.deletePermission);
 }
 
 module.exports = permissionRoutes;

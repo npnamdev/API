@@ -1,54 +1,182 @@
-const RoleService = require('../services/role.service');
+const Role = require('../models/role.model');
 
-async function getRoles(req, reply) {
+
+exports.createRole = async (request, reply) => {
     try {
-        const roles = await RoleService.getAllRoles();
-        return reply.send({ roles });
-    } catch (err) {
-        reply.internalServerError('Error fetching roles');
+        const existingRole = await Role.findOne({ name: request.body.name });
+        if (existingRole) {
+            return reply.code(400).send({
+                status: 'error',
+                message: 'Role with this name already exists',
+            });
+        }
+
+        const role = new Role(request.body);
+        await role.save();
+
+        reply.send({
+            status: 'success',
+            message: 'Role created successfully',
+            data: role,
+        });
+    } catch (error) {
+        reply.code(500).send({
+            status: 'error',
+            message: error.message,
+        });
+    }
+};
+
+exports.getAllRoles = async (request, reply) => {
+    try {
+        const { page = 1, limit = 10, search = '', sort = 'desc' } = request.query;
+        const pageNumber = Math.max(1, parseInt(page));
+        const pageSize = Math.max(1, parseInt(limit));
+        const skip = (pageNumber - 1) * pageSize;
+
+        const searchQuery = search
+            ? { name: { $regex: search, $options: 'i' } }
+            : {};
+
+        const sortOrder = sort === 'asc' ? 1 : -1;
+
+        const roles = await Role.find(searchQuery)
+            .skip(skip)
+            .limit(pageSize)
+            .sort({ createdAt: sortOrder });
+
+        const totalRoles = await Role.countDocuments(searchQuery);
+        const totalPages = Math.ceil(totalRoles / pageSize);
+
+        reply.send({
+            status: 'success',
+            message: 'Roles retrieved successfully',
+            data: roles,
+            pagination: {
+                currentPage: pageNumber,
+                totalPages,
+                totalRoles,
+                limit: pageSize,
+            },
+        });
+    } catch (error) {
+        reply.code(500).send({
+            status: 'error',
+            message: error.message,
+        });
+    }
+};
+
+exports.getRoleById = async (request, reply) => {
+    const { id } = request.params;
+    try {
+        const role = await Role.findById(id).lean();
+        if (!role) {
+            return reply.code(404).send({
+                status: 'error',
+                message: 'Role not found',
+            });
+        }
+        reply.send({
+            status: 'success',
+            message: 'Role retrieved successfully',
+            data: role,
+        });
+    } catch (error) {
+        reply.code(500).send({
+            status: 'error',
+            message: error.message,
+        });
+    }
+};
+
+exports.updateRoleById = async (request, reply) => {
+    const { id } = request.params;
+    try {
+        const role = await Role.findById(id);
+        if (!role) {
+            return reply.code(404).send({
+                status: 'error',
+                message: 'Role not found',
+            });
+        }
+
+        if (role.name === 'admin' || role.name === 'user') {
+            return reply.code(403).send({
+                status: 'error',
+                message: 'Cannot update role with name "admin" or "user"',
+            });
+        }
+
+        const updatedRole = await Role.findByIdAndUpdate(id, request.body, { new: true });
+        if (!updatedRole) {
+            return reply.code(404).send({
+                status: 'error',
+                message: 'Role not found',
+            });
+        }
+
+        reply.send({
+            status: 'success',
+            message: 'Role updated successfully',
+            data: updatedRole,
+        });
+    } catch (error) {
+        reply.code(500).send({
+            status: 'error',
+            message: error.message,
+        });
+    }
+};
+
+exports.deleteRoleById = async (request, reply) => {
+    const { id } = request.params;
+    try {
+        const role = await Role.findById(id);
+        if (!role) {
+            return reply.code(404).send({
+                status: 'error',
+                message: 'Role not found',
+            });
+        }
+
+        if (role.name === 'admin' || role.name === 'user') {
+            return reply.code(403).send({
+                status: 'error',
+                message: 'Cannot delete role with name "admin" or "user"',
+            });
+        }
+
+        await Role.findByIdAndDelete(id);
+        reply.send({
+            status: 'success',
+            message: 'Role deleted successfully',
+        });
+    } catch (error) {
+        reply.code(500).send({
+            status: 'error',
+            message: error.message,
+        });
+    }
+};
+
+exports.getPermissionsOfRole = async (request, reply) => {
+    const { id } = request.params;
+    try {
+        const role = await Role.findById(id)
+            .populate('permissions', 'name')
+            .lean();
+
+        if (!role) {
+            return reply.status(404).send({ status: 'error', message: 'Role not found' });
+        }
+
+        reply.send({
+            status: 'success',
+            message: 'Permissions of role retrieved successfully',
+            data: role.permissions,
+        });
+    } catch (error) {
+        reply.code(500).send({ status: 'error', message: error.message });
     }
 }
-
-async function createRole(req, reply) {
-    try {
-        const { name, description } = req.body;
-        const newRole = await RoleService.createRole({ name, description });
-        return reply.send({ message: 'Role created', role: newRole });
-    } catch (err) {
-        reply.internalServerError('Error creating role');
-    }
-}
-
-async function addPermissionsToRole(req, reply) {
-    try {
-        const { roleId, permissions } = req.body;
-        const updatedRole = await RoleService.addPermissionsToRole(roleId, permissions);
-        return reply.send({ message: 'Permissions added successfully', role: updatedRole });
-    } catch (err) {
-        reply.internalServerError('Error adding permissions to role');
-    }
-}
-
-
-async function removePermissionsFromRole(req, reply) {
-    try {
-        const { roleId, permissions } = req.body;
-        const updatedRole = await RoleService.removePermissionsFromRole(roleId, permissions);
-        return reply.send({ message: 'Permissions removed successfully', role: updatedRole });
-    } catch (err) {
-        reply.internalServerError('Error removing permissions from role');
-    }
-}
-
-
-async function getRolePermissions(req, res) {
-    const { roleId } = req.params;
-    try {
-        const permissions = await RoleService.getRolePermissions(roleId);
-        res.json(permissions);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-}
-
-module.exports = { getRoles, createRole, addPermissionsToRole, removePermissionsFromRole, getRolePermissions };
