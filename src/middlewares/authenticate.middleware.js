@@ -9,7 +9,7 @@ const authenticate = async (request, reply) => {
 
         const token = authHeader.split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        request.user = decoded; // Gán thông tin user vào request
+        request.user = decoded;
     } catch (err) {
         return reply.code(401).send({ status: 'error', message: 'Invalid token' });
     }

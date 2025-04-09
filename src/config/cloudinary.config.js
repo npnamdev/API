@@ -1,4 +1,3 @@
-// config/cloudinary.config.js
 const cloudinary = require('cloudinary').v2;
 
 // Cấu hình Cloudinary
