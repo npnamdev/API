@@ -7,6 +7,8 @@ async function roleRoutes(fastify) {
     fastify.get('/roles/:id/permissions', roleController.getRoleById);
     fastify.put('/roles/:id', roleController.updateRoleById);
     fastify.delete('/roles/:id', roleController.deleteRoleById);
+    
+    fastify.put('/roles/:roleId/permissions', roleController.assignPermissionsToRole);
 
 }
 

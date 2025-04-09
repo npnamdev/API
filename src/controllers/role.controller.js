@@ -1,5 +1,40 @@
 const Role = require('../models/role.model');
+const Permission = require('../models/permission.model');
 
+// Gán quyền cho role
+exports.assignPermissionsToRole = async (request, reply) => {
+    const { roleId } = request.params;
+    const { permissionIds } = request.body;
+
+    if (!Array.isArray(permissionIds)) {
+        return reply.status(400).send({ message: 'permissionIds must be an array' });
+    }
+
+    try {
+        // Kiểm tra các quyền có tồn tại không
+        const existingPermissions = await Permission.find({ _id: { $in: permissionIds } });
+
+        if (existingPermissions.length !== permissionIds.length) {
+            return reply.status(404).send({ message: 'One or more permissions not found' });
+        }
+
+        // Cập nhật role
+        const updatedRole = await Role.findByIdAndUpdate(
+            roleId,
+            { permissions: permissionIds },
+            { new: true }
+        ).populate('permissions');
+
+        if (!updatedRole) {
+            return reply.status(404).send({ message: 'Role not found' });
+        }
+
+        reply.send(updatedRole);
+    } catch (error) {
+        console.error(error);
+        reply.status(500).send({ message: 'Internal server error' });
+    }
+};
 
 exports.createRole = async (request, reply) => {
     try {
