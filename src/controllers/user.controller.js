@@ -24,49 +24,131 @@ exports.createUser = async (request, reply) => {
     }
 };
 
+// exports.getAllUsers = async (request, reply) => {
+//     try {
+//         const { page = 1, limit = 10, search = '', sort = 'desc' } = request.query;
+//         const pageNumber = Math.max(1, parseInt(page));
+//         const pageSize = Math.max(1, parseInt(limit));
+//         const skip = (pageNumber - 1) * pageSize;
+
+//         const searchQuery = search
+//             ? {
+//                 $or: [
+//                     { email: { $regex: `^${search}`, $options: 'i' } },
+//                     { username: { $regex: `^${search}`, $options: 'i' } },
+//                 ],
+//             }
+//             : {};
+
+//         const sortOrder = sort === 'asc' ? 1 : -1;
+
+//         const users = await User.find(searchQuery)
+//             .select('-password')
+//             .skip(skip)
+//             .limit(pageSize)
+//             .sort({ createdAt: sortOrder })
+//             .populate({ path: 'role', select: 'name' });
+
+//         const totalUsers = await User.countDocuments(searchQuery);
+//         const totalPages = Math.ceil(totalUsers / pageSize);
+
+//         reply.send({
+//             status: 'success',
+//             message: 'Users retrieved successfully',
+//             data: users,
+//             pagination: {
+//                 currentPage: pageNumber,
+//                 totalPages,
+//                 totalUsers,
+//                 limit: pageSize,
+//             },
+//         });
+//     } catch (error) {
+//         reply.internalServerError(error.message || 'Internal Server Error');
+//     }
+// };
+
+// exports.getAllUsers = async (request, reply) => {
+//     try {
+//         const { page = 1, limit = 10, sort = 'desc', filters = '{}', search = '', searchFields = '' } = request.query;
+//         const skip = (page - 1) * limit;
+//         let filterConditions = {};
+//         try {
+//             filterConditions = JSON.parse(filters);
+//         } catch (err) {
+//             return reply.status(400).send({ message: 'Invalid filters format' });
+//         }
+
+//         if (search && searchFields) {
+//             const fieldsToSearch = searchFields.split(',');
+//             const searchConditions = fieldsToSearch.map(field => ({
+//                 [field]: { $regex: search, $options: 'i' }
+//             }));
+//             filterConditions.$or = searchConditions;
+//         }
+
+//         const sortOptions = { createdAt: sort === 'asc' ? 1 : -1 };
+//         const totalUsers = await User.countDocuments(filterConditions);
+//         const users = await User.find(filterConditions).select('-password').skip(skip).limit(parseInt(limit)).sort(sortOptions);
+
+//         return reply.send({
+//             data: users,
+//             totalCount: totalUsers,
+//             totalPages: Math.ceil(totalUsers / limit),
+//             currentPage: page,
+//         });
+//     } catch (error) {
+//         console.error(error);
+//         return reply.status(500).send({ message: 'Server Error' });
+//     }
+// };
+
 exports.getAllUsers = async (request, reply) => {
     try {
-        const { page = 1, limit = 10, search = '', sort = 'desc' } = request.query;
-        const pageNumber = Math.max(1, parseInt(page));
-        const pageSize = Math.max(1, parseInt(limit));
-        const skip = (pageNumber - 1) * pageSize;
+        const { page = 1, limit = 10, sort = 'desc', search = '', searchFields = '' } = request.query;
+        const skip = (page - 1) * limit;
 
-        const searchQuery = search
-            ? {
-                $or: [
-                    { email: { $regex: `^${search}`, $options: 'i' } },
-                    { username: { $regex: `^${search}`, $options: 'i' } },
-                ],
+        // Extract dynamic filters from query
+        const filterConditions = {};
+        const excludeFields = ['page', 'limit', 'sort', 'search', 'searchFields'];
+
+        for (const key in request.query) {
+            if (!excludeFields.includes(key)) {
+                filterConditions[key] = request.query[key];
             }
-            : {};
+        }
 
-        const sortOrder = sort === 'asc' ? 1 : -1;
+        // Add search support
+        if (search && searchFields) {
+            const fieldsToSearch = searchFields.split(',');
+            const searchConditions = fieldsToSearch.map(field => ({
+                [field]: { $regex: search, $options: 'i' }
+            }));
+            filterConditions.$or = searchConditions;
+        }
 
-        const users = await User.find(searchQuery)
+        const sortOptions = { createdAt: sort === 'asc' ? 1 : -1 };
+
+        const totalUsers = await User.countDocuments(filterConditions);
+        const users = await User.find(filterConditions)
             .select('-password')
             .skip(skip)
-            .limit(pageSize)
-            .sort({ createdAt: sortOrder })
-            .populate({ path: 'role', select: 'name' });
+            .limit(parseInt(limit))
+            .sort(sortOptions);
 
-        const totalUsers = await User.countDocuments(searchQuery);
-        const totalPages = Math.ceil(totalUsers / pageSize);
-
-        reply.send({
-            status: 'success',
-            message: 'Users retrieved successfully',
+        return reply.send({
             data: users,
-            pagination: {
-                currentPage: pageNumber,
-                totalPages,
-                totalUsers,
-                limit: pageSize,
-            },
+            totalCount: totalUsers,
+            totalPages: Math.ceil(totalUsers / limit),
+            currentPage: page,
         });
     } catch (error) {
-        reply.internalServerError(error.message || 'Internal Server Error');
+        console.error(error);
+        return reply.status(500).send({ message: 'Server Error' });
     }
 };
+
+
 
 exports.getUserById = async (request, reply) => {
     try {
