@@ -24,59 +24,19 @@ exports.createUser = async (request, reply) => {
     }
 };
 
-// exports.getAllUsers = async (request, reply) => {
-//     try {
-//         const { page = 1, limit = 10, search = '', sort = 'desc' } = request.query;
-//         const pageNumber = Math.max(1, parseInt(page));
-//         const pageSize = Math.max(1, parseInt(limit));
-//         const skip = (pageNumber - 1) * pageSize;
-
-//         const searchQuery = search
-//             ? {
-//                 $or: [
-//                     { email: { $regex: `^${search}`, $options: 'i' } },
-//                     { username: { $regex: `^${search}`, $options: 'i' } },
-//                 ],
-//             }
-//             : {};
-
-//         const sortOrder = sort === 'asc' ? 1 : -1;
-
-//         const users = await User.find(searchQuery)
-//             .select('-password')
-//             .skip(skip)
-//             .limit(pageSize)
-//             .sort({ createdAt: sortOrder })
-//             .populate({ path: 'role', select: 'name' });
-
-//         const totalUsers = await User.countDocuments(searchQuery);
-//         const totalPages = Math.ceil(totalUsers / pageSize);
-
-//         reply.send({
-//             status: 'success',
-//             message: 'Users retrieved successfully',
-//             data: users,
-//             pagination: {
-//                 currentPage: pageNumber,
-//                 totalPages,
-//                 totalUsers,
-//                 limit: pageSize,
-//             },
-//         });
-//     } catch (error) {
-//         reply.internalServerError(error.message || 'Internal Server Error');
-//     }
-// };
 
 // exports.getAllUsers = async (request, reply) => {
 //     try {
-//         const { page = 1, limit = 10, sort = 'desc', filters = '{}', search = '', searchFields = '' } = request.query;
+//         const { page = 1, limit = 10, sort = 'desc', search = '', searchFields = '' } = request.query;
 //         const skip = (page - 1) * limit;
-//         let filterConditions = {};
-//         try {
-//             filterConditions = JSON.parse(filters);
-//         } catch (err) {
-//             return reply.status(400).send({ message: 'Invalid filters format' });
+
+//         const filterConditions = {};
+//         const excludeFields = ['page', 'limit', 'sort', 'search', 'searchFields'];
+
+//         for (const key in request.query) {
+//             if (!excludeFields.includes(key)) {
+//                 filterConditions[key] = request.query[key];
+//             }
 //         }
 
 //         if (search && searchFields) {
@@ -88,8 +48,13 @@ exports.createUser = async (request, reply) => {
 //         }
 
 //         const sortOptions = { createdAt: sort === 'asc' ? 1 : -1 };
+
 //         const totalUsers = await User.countDocuments(filterConditions);
-//         const users = await User.find(filterConditions).select('-password').skip(skip).limit(parseInt(limit)).sort(sortOptions);
+//         const users = await User.find(filterConditions)
+//             .select('-password')
+//             .skip(skip)
+//             .limit(parseInt(limit))
+//             .sort(sortOptions);
 
 //         return reply.send({
 //             data: users,
@@ -105,49 +70,67 @@ exports.createUser = async (request, reply) => {
 
 exports.getAllUsers = async (request, reply) => {
     try {
-        const { page = 1, limit = 10, sort = 'desc', search = '', searchFields = '' } = request.query;
+        // Parse và validate query params
+        const page = Math.max(parseInt(request.query.page) || 1, 1);
+        const limit = Math.min(parseInt(request.query.limit) || 10, 100);
+        const sortBy = request.query.sortBy || 'createdAt';
+        const sortOrder = request.query.sort === 'asc' ? 1 : -1;
+        const search = request.query.search || '';
+        const searchFields = request.query.searchFields || '';
+
         const skip = (page - 1) * limit;
 
-        // Extract dynamic filters from query
-        const filterConditions = {};
-        const excludeFields = ['page', 'limit', 'sort', 'search', 'searchFields'];
+        // Danh sách field không dùng để filter
+        const excludeFields = ['page', 'limit', 'sort', 'sortBy', 'search', 'searchFields'];
+
+        // Tạo điều kiện lọc cơ bản từ query params
+        const filterConditions = [];
 
         for (const key in request.query) {
             if (!excludeFields.includes(key)) {
-                filterConditions[key] = request.query[key];
+                filterConditions.push({ [key]: request.query[key] });
             }
         }
 
-        // Add search support
+        // Thêm điều kiện tìm kiếm (nếu có)
         if (search && searchFields) {
-            const fieldsToSearch = searchFields.split(',');
-            const searchConditions = fieldsToSearch.map(field => ({
-                [field]: { $regex: search, $options: 'i' }
+            const fields = searchFields.split(',');
+            const searchConditions = fields.map(field => ({
+                [field]: { $regex: search, $options: 'i' },
             }));
-            filterConditions.$or = searchConditions;
+            filterConditions.push({ $or: searchConditions });
         }
 
-        const sortOptions = { createdAt: sort === 'asc' ? 1 : -1 };
+        // Combine conditions
+        const finalFilter = filterConditions.length > 0 ? { $and: filterConditions } : {};
 
-        const totalUsers = await User.countDocuments(filterConditions);
-        const users = await User.find(filterConditions)
+        // Tổng số users
+        const totalUsers = await User.countDocuments(finalFilter);
+
+        // Truy vấn dữ liệu users
+        const users = await User.find(finalFilter)
             .select('-password')
             .skip(skip)
-            .limit(parseInt(limit))
-            .sort(sortOptions);
+            .limit(limit)
+            .sort({ [sortBy]: sortOrder });
 
+        // Trả kết quả
         return reply.send({
+            success: true,
             data: users,
-            totalCount: totalUsers,
-            totalPages: Math.ceil(totalUsers / limit),
-            currentPage: page,
+            pagination: {
+                total: totalUsers,
+                page,
+                limit,
+                totalPages: Math.ceil(totalUsers / limit),
+            },
         });
+
     } catch (error) {
         console.error(error);
-        return reply.status(500).send({ message: 'Server Error' });
+        return reply.status(500).send({ success: false, message: 'Server Error' });
     }
 };
-
 
 
 exports.getUserById = async (request, reply) => {
