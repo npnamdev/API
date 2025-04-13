@@ -1,5 +1,5 @@
 const corsOptions = {
-    origin: ['http://localhost:5173', 'https://test-cookie-iota.vercel.app', "https://app.wedly.info", "https://wedly.info"],
+    origin: ['http://localhost:3000', 'https://test-cookie-iota.vercel.app', "https://app.wedly.info", "https://wedly.info", "https://glorious-meme-9vqgp74p6jv3p74r-3000.app.github.dev"],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
