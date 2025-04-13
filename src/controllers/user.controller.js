@@ -112,7 +112,8 @@ exports.getAllUsers = async (request, reply) => {
             .select('-password')
             .skip(skip)
             .limit(limit)
-            .sort({ [sortBy]: sortOrder });
+            .sort({ [sortBy]: sortOrder })
+            .populate({ path: 'role', select: 'name' });
 
         // Trả kết quả
         return reply.send({
