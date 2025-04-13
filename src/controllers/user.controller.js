@@ -25,49 +25,6 @@ exports.createUser = async (request, reply) => {
 };
 
 
-// exports.getAllUsers = async (request, reply) => {
-//     try {
-//         const { page = 1, limit = 10, sort = 'desc', search = '', searchFields = '' } = request.query;
-//         const skip = (page - 1) * limit;
-
-//         const filterConditions = {};
-//         const excludeFields = ['page', 'limit', 'sort', 'search', 'searchFields'];
-
-//         for (const key in request.query) {
-//             if (!excludeFields.includes(key)) {
-//                 filterConditions[key] = request.query[key];
-//             }
-//         }
-
-//         if (search && searchFields) {
-//             const fieldsToSearch = searchFields.split(',');
-//             const searchConditions = fieldsToSearch.map(field => ({
-//                 [field]: { $regex: search, $options: 'i' }
-//             }));
-//             filterConditions.$or = searchConditions;
-//         }
-
-//         const sortOptions = { createdAt: sort === 'asc' ? 1 : -1 };
-
-//         const totalUsers = await User.countDocuments(filterConditions);
-//         const users = await User.find(filterConditions)
-//             .select('-password')
-//             .skip(skip)
-//             .limit(parseInt(limit))
-//             .sort(sortOptions);
-
-//         return reply.send({
-//             data: users,
-//             totalCount: totalUsers,
-//             totalPages: Math.ceil(totalUsers / limit),
-//             currentPage: page,
-//         });
-//     } catch (error) {
-//         console.error(error);
-//         return reply.status(500).send({ message: 'Server Error' });
-//     }
-// };
-
 exports.getAllUsers = async (request, reply) => {
     try {
         // Parse và validate query params
