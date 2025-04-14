@@ -16,12 +16,12 @@ exports.login = async (request, reply) => {
             return reply.code(400).send({ message: 'Invalid credentials' });
         }
 
-        console.log("check 5", bcrypt.compare(password, user.password));
 
 
-        if (!user.isVerified) {
-            return reply.code(403).send({ message: 'Email not verified' });
-        }
+
+        // if (!user.isVerified) {
+        //     return reply.code(403).send({ message: 'Email not verified' });
+        // }
 
         console.log("user", user);
 
@@ -31,11 +31,15 @@ exports.login = async (request, reply) => {
             { expiresIn: '15m' }
         );
 
+        console.log("accessToken", accessToken);
+
         // Tạo refresh token bằng @fastify/jwt
         const refreshToken = await reply.jwtSign(
             { id: user._id },
             { expiresIn: '7d' }
         );
+
+        console.log("refreshToken", refreshToken);
 
         // Set refreshToken as cookie
         reply.setCookie('refreshToken', refreshToken, {
