@@ -22,6 +22,11 @@ fastify.register(require('./routes/auth.route'), { prefix: '/api' });
 fastify.register(require('./routes/media.route'), { prefix: '/api' });
 fastify.register(require('./routes/notification.route'), { prefix: '/api' });
 
+fastify.post('/api/test-body', async (req, reply) => {
+    console.log('req.body:', req.body); // Log để kiểm tra
+    return { body: req.body };
+});
+
 fastify.get("/", (req, reply) => {
     return reply.sendFile("index.html");
 });

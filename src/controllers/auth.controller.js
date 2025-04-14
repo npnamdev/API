@@ -8,11 +8,16 @@ exports.login = async (request, reply) => {
         if (!email || !password) {
             return reply.code(400).send({ message: 'Email and password are required' });
         }
-
+        console.log("Check request.body", request.body);
         const user = await User.findOne({ email });
+        console.log("Check user", user);
+
         if (!user || !(await bcrypt.compare(password, user.password))) {
             return reply.code(400).send({ message: 'Invalid credentials' });
         }
+
+        console.log("check 5", bcrypt.compare(password, user.password));
+
 
         if (!user.isVerified) {
             return reply.code(403).send({ message: 'Email not verified' });
