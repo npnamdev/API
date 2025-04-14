@@ -1,7 +1,59 @@
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/user.model');
+
+exports.login = async (request, reply) => {
+    try {
+        const { email, password } = request.body;
+        if (!email || !password) {
+            return reply.code(400).send({ message: 'Email and password are required' });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+            return reply.code(400).send({ message: 'Invalid credentials' });
+        }
+
+        if (!user.isVerified) {
+            return reply.code(403).send({ message: 'Email not verified' });
+        }
+
+        console.log("user", user);
+
+        // Tạo access token bằng @fastify/jwt
+        const accessToken = await reply.jwtSign(
+            { id: user._id },
+            { expiresIn: '15m' }
+        );
+
+        // Tạo refresh token bằng @fastify/jwt
+        const refreshToken = await reply.jwtSign(
+            { id: user._id },
+            { expiresIn: '7d' }
+        );
+
+        // Set refreshToken as cookie
+        reply.setCookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'None',
+            path: '/',
+            domain: process.env.NODE_ENV === 'production' ? '.wedly.info' : undefined,
+            maxAge: 7 * 24 * 60 * 60 // 7 ngày
+        });
+
+        return reply.send({
+            message: 'Login successful',
+            accessToken
+        });
+
+    } catch (err) {
+        console.error('Login error:', err);
+        return reply.code(500).send({ message: 'Internal server error' });
+    }
+};
+
+
 
 exports.register = async (request, reply) => {
     try {
@@ -26,52 +78,6 @@ exports.register = async (request, reply) => {
         // Gửi email xác thực ở đây
 
         reply.code(201).send({ message: 'User registered. Please verify your email.' });
-    } catch (err) {
-        reply.code(500).send({ message: err.message });
-    }
-};
-
-exports.login = async (request, reply) => {
-    try {
-        const { email, password } = request.body;
-        const user = await User.findOne({ email });
-
-        if (!user || !(await bcrypt.compare(password, user.password))) {
-            return reply.code(400).send({ message: 'Invalid credentials' });
-        }
-
-        if (!user.isVerified) {
-            return reply.code(403).send({ message: 'Email not verified' });
-        }
-
-        const accessToken = jwt.sign(
-            { id: user._id },
-            process.env.ACCESS_SECRET,
-            { expiresIn: '15m' }
-        );
-
-        const refreshToken = jwt.sign(
-            { id: user._id },
-            process.env.REFRESH_SECRET,
-            { expiresIn: '7d' }
-        );
-
-        // Set refreshToken as cookie
-        reply.setCookie('refreshToken', refreshToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'None',
-            path: '/',
-            domain: '.wedly.info',
-            maxAge: 7 * 24 * 60 * 60 // 7 ngày
-        });
-
-        // Gửi access token trong response
-        return reply.send({
-            message: 'Login successful',
-            accessToken
-        });
-
     } catch (err) {
         reply.code(500).send({ message: err.message });
     }
