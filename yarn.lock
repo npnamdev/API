@@ -119,6 +119,15 @@
     "@fastify/forwarded" "^3.0.0"
     ipaddr.js "^2.1.0"
 
+"@fastify/rate-limit@^10.2.2":
+  version "10.2.2"
+  resolved "https://registry.yarnpkg.com/@fastify/rate-limit/-/rate-limit-10.2.2.tgz#6aef8d2b9dd617fecffc0da879e3232d239a3d4e"
+  integrity sha512-45vXZImiYthKlMohF4XoHXYiBXCyRYY+zmtjLZuQrGraW0Zj9hYPYNOIa47012+5A65M0KJQxIVbzYCNP90hcg==
+  dependencies:
+    "@lukeed/ms" "^2.0.2"
+    fastify-plugin "^5.0.0"
+    toad-cache "^3.7.0"
+
 "@fastify/send@^3.2.0":
   version "3.3.1"
   resolved "https://registry.yarnpkg.com/@fastify/send/-/send-3.3.1.tgz#cb5759480eb4110b44d9af613d61b3f8b2933d8b"

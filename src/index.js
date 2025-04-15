@@ -3,6 +3,16 @@ require('./config/cloudinary.config')();
 const corsOptions = require('./config/cors');
 const fastify = require('fastify')({ logger: false });
 
+fastify.register(require('@fastify/rate-limit'), {
+    max: 5,
+    timeWindow: '1 minute',
+    errorResponseBuilder: function (req, context) {
+        return {
+            code: 429,
+            message: `Too many requests. Please wait ${Math.ceil(context.ttl / 1000)} seconds.`,
+        };
+    }
+});
 fastify.register(require('@fastify/cors'), corsOptions);
 fastify.register(require("fastify-socket.io"), { cors: corsOptions });
 fastify.register(require("@fastify/static"), { root: require("path").join(__dirname, "public"), prefix: '/' });

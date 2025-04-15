@@ -8,60 +8,42 @@ exports.login = async (request, reply) => {
         if (!email || !password) {
             return reply.code(400).send({ message: 'Email and password are required' });
         }
-        console.log("Check request.body", request.body);
+      
         const user = await User.findOne({ email });
-        console.log("Check user", user);
 
         if (!user || !(await bcrypt.compare(password, user.password))) {
             return reply.code(400).send({ message: 'Invalid credentials' });
         }
 
+        if (!user.isVerified) { return reply.code(403).send({ message: 'Email not verified' });}
+        const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '15m' });
+        const refreshToken = await reply.jwtSign({ id: user._id }, { expiresIn: '7d' });
 
-
-
-        // if (!user.isVerified) {
-        //     return reply.code(403).send({ message: 'Email not verified' });
-        // }
-
-        console.log("user", user);
-
-        // Tạo access token bằng @fastify/jwt
-        const accessToken = await reply.jwtSign(
-            { id: user._id },
-            { expiresIn: '15m' }
-        );
-
-        console.log("accessToken", accessToken);
-
-        // Tạo refresh token bằng @fastify/jwt
-        const refreshToken = await reply.jwtSign(
-            { id: user._id },
-            { expiresIn: '7d' }
-        );
-
-        console.log("refreshToken", refreshToken);
-
-        // Set refreshToken as cookie
         reply.setCookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'None',
             path: '/',
             domain: process.env.NODE_ENV === 'production' ? '.wedly.info' : undefined,
-            maxAge: 7 * 24 * 60 * 60 // 7 ngày
+            maxAge: 7 * 24 * 60 * 60 
         });
 
-        return reply.send({
-            message: 'Login successful',
-            accessToken
-        });
-
+        return reply.send({ message: 'Login successful', accessToken });
     } catch (err) {
-        console.error('Login error:', err);
         return reply.code(500).send({ message: 'Internal server error' });
     }
 };
 
+exports.logout = async (request, reply) => {
+    reply
+        .clearCookie('refreshToken', {
+            path: '/',
+            domain: '.wedly.info',
+            sameSite: 'None',
+            secure: true
+        })
+        .send({ message: 'Logged out successfully' });
+};
 
 
 exports.register = async (request, reply) => {
@@ -92,16 +74,7 @@ exports.register = async (request, reply) => {
     }
 };
 
-exports.logout = async (request, reply) => {
-    reply
-        .clearCookie('refreshToken', {
-            path: '/',
-            domain: '.wedly.info',
-            sameSite: 'None',
-            secure: true
-        })
-        .send({ message: 'Logged out successfully' });
-};
+
 
 exports.verifyEmail = async (request, reply) => {
     try {
