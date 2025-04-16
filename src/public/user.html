@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Trang quản lý người dùng - Prism JSON Formatter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/themes/prism-okaidia.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/prism.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/components/prism-json.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        async function fetchUsers() {
+            const response = await fetch(`/api/users?page=1&limit=100`);
+            const data = await response.json();
+            const formattedJson = JSON.stringify(data, null, 2);
+            document.getElementById('jsonDisplay').textContent = formattedJson;
+            Prism.highlightElement(document.getElementById('jsonDisplay'));
+        }
+
+        window.onload = function () {
+            fetchUsers();
+        };
+    </script>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+
+<body>
+    <pre id="jsonDisplay"
+        class="language-json bg-gray-800 text-white p-4 rounded-lg font-mono overflow-auto w-full"></pre>
+</body>
+
+</html>

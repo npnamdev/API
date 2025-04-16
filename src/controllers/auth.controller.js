@@ -1,6 +1,8 @@
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const User = require('../models/user.model');
+const Role = require('../models/role.model'); 
+const sendEmail = require('../utils/mailer');
 
 exports.login = async (request, reply) => {
     try {
@@ -15,16 +17,17 @@ exports.login = async (request, reply) => {
             return reply.code(400).send({ message: 'Invalid credentials' });
         }
 
-        if (!user.isVerified) { return reply.code(403).send({ message: 'Email not verified' });}
+        // if (!user.isVerified) { return reply.code(403).send({ message: 'Email not verified' });}
+
         const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '15m' });
         const refreshToken = await reply.jwtSign({ id: user._id }, { expiresIn: '7d' });
 
         reply.setCookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'None',
+            sameSite: 'Lax',
             path: '/',
-            domain: process.env.NODE_ENV === 'production' ? '.wedly.info' : undefined,
+            domain: '.wedly.info',
             maxAge: 7 * 24 * 60 * 60 
         });
 
@@ -35,46 +38,50 @@ exports.login = async (request, reply) => {
 };
 
 exports.logout = async (request, reply) => {
-    reply
-        .clearCookie('refreshToken', {
-            path: '/',
-            domain: '.wedly.info',
-            sameSite: 'None',
-            secure: true
-        })
-        .send({ message: 'Logged out successfully' });
+    reply.clearCookie('refreshToken').send({ message: 'Logged out successfully' });
 };
-
 
 exports.register = async (request, reply) => {
     try {
-        const { username, email, password } = request.body;
+        const { username, email, password, fullName } = request.body;
+
         const existingUser = await User.findOne({ email });
-
-        if (existingUser)
+        if (existingUser) {
             return reply.code(400).send({ message: 'Email already registered' });
+        }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
         const verificationToken = crypto.randomBytes(32).toString('hex');
+
+        const userRole = await Role.findOne({ name: 'user' });
+        if (!userRole) {
+            return reply.code(500).send({ message: 'Default role not found' });
+        }
 
         const user = new User({
             username,
             email,
-            password: hashedPassword,
+            password,
+            fullName,
+            role: userRole._id, 
             verificationToken,
         });
 
         await user.save();
 
-        // Gửi email xác thực ở đây
+        const verifyUrl = `https://your-domain.com/verify-email?token=${verificationToken}`;
+        await sendEmail({
+            to: email,
+            subject: 'Xác minh email của bạn',
+            html: `<p>Chào ${username},</p>
+                   <p>Vui lòng xác minh email của bạn bằng cách nhấn vào link bên dưới:</p>
+                   <a href="${verifyUrl}">Xác minh email</a>`,
+        });
 
-        reply.code(201).send({ message: 'User registered. Please verify your email.' });
+        reply.code(201).send({ message: 'Đăng ký thành công. Vui lòng kiểm tra email để xác minh.' });
     } catch (err) {
         reply.code(500).send({ message: err.message });
     }
 };
-
-
 
 exports.verifyEmail = async (request, reply) => {
     try {

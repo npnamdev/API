@@ -3,62 +3,25 @@ require('./config/cloudinary.config')();
 const corsOptions = require('./config/cors');
 const fastify = require('fastify')({ logger: false });
 
-fastify.register(require('@fastify/rate-limit'), {
-    max: 5,
-    timeWindow: '1 minute',
-    errorResponseBuilder: function (req, context) {
-        return {
-            code: 429,
-            message: `Too many requests. Please wait ${Math.ceil(context.ttl / 1000)} seconds.`,
-        };
-    }
-});
 fastify.register(require('@fastify/cors'), corsOptions);
 fastify.register(require("fastify-socket.io"), { cors: corsOptions });
 fastify.register(require("@fastify/static"), { root: require("path").join(__dirname, "public"), prefix: '/' });
 fastify.register(require('@fastify/cookie'));
 fastify.register(require('@fastify/formbody'));
 fastify.register(require('@fastify/multipart'), { limits: { fileSize: 10 * 1024 * 1024 } });
-
+fastify.register(require('@fastify/rate-limit'));
 fastify.register(require('./plugins/sensible'));
 fastify.register(require('./plugins/mongoose'));
 fastify.register(require('./plugins/jwt'));
 fastify.register(require('./plugins/email'));
-
-fastify.register(require('./routes/user.route'), { prefix: '/api' });
-fastify.register(require('./routes/role.route'), { prefix: '/api' });
-fastify.register(require('./routes/permission.route'), { prefix: '/api' });
-fastify.register(require('./routes/auth.route'), { prefix: '/api' });
-fastify.register(require('./routes/media.route'), { prefix: '/api' });
-fastify.register(require('./routes/notification.route'), { prefix: '/api' });
-
-fastify.post('/api/test-body', async (req, reply) => {
-    console.log('req.body:', req.body); // Log để kiểm tra
-    return { body: req.body };
-});
-
-fastify.get("/", (req, reply) => {
-    return reply.sendFile("index.html");
-});
-
-fastify.get('/api/set-cookie', async (req, reply) => {
-    reply
-        .setCookie('token', '123456', {
-            httpOnly: true,
-            // secure: process.env.NODE_ENV !== 'development',
-            secure: true,
-            sameSite: "None",
-            path: '/',
-            domain: '.wedly.info',
-            maxAge: 24 * 60 * 60
-        })
-        .send({ message: 'Cookie set successfully' });
-});
-
-fastify.get('/api/get-cookie', async (req, reply) => {
-    const token = req.cookies.token;
-    return { token };
-});
+fastify.register(require('./routes/user.route'), { prefix: process.env.API_PREFIX || '/api' });
+fastify.register(require('./routes/role.route'), { prefix: process.env.API_PREFIX || '/api' });
+fastify.register(require('./routes/permission.route'), { prefix: process.env.API_PREFIX || '/api' });
+fastify.register(require('./routes/auth.route'), { prefix: process.env.API_PREFIX || '/api' });
+fastify.register(require('./routes/media.route'), { prefix: process.env.API_PREFIX || '/api' });
+fastify.register(require('./routes/notification.route'), { prefix: process.env.API_PREFIX || '/api' });
+fastify.get("/", (req, reply) => { return reply.sendFile("index.html") });
+fastify.get("/view/users", (req, reply) => { return reply.sendFile("user.html") });
 
 (async () => {
     try {
