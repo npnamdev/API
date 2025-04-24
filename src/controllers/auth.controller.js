@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const User = require('../models/user.model');
-const Role = require('../models/role.model'); 
+const Role = require('../models/role.model');
 const sendEmail = require('../utils/mailer');
 
 exports.login = async (request, reply) => {
@@ -10,7 +10,7 @@ exports.login = async (request, reply) => {
         if (!email || !password) {
             return reply.code(400).send({ message: 'Email and password are required' });
         }
-      
+
         const user = await User.findOne({ email });
 
         if (!user || !(await bcrypt.compare(password, user.password))) {
@@ -27,8 +27,9 @@ exports.login = async (request, reply) => {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'Lax',
             path: '/',
-            domain: '.wedly.info',
-            maxAge: 7 * 24 * 60 * 60 
+            // domain: process.env.NODE_ENV === 'production' ? '.wedly.info' : undefined,
+            // domain: '.wedly.info',
+            maxAge: 7 * 24 * 60 * 60
         });
 
         return reply.send({ message: 'Login successful', accessToken });
@@ -62,7 +63,7 @@ exports.register = async (request, reply) => {
             email,
             password,
             fullName,
-            role: userRole._id, 
+            role: userRole._id,
             verificationToken,
         });
 
