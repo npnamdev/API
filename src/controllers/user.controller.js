@@ -27,29 +27,20 @@ exports.createUser = async (request, reply) => {
 
 exports.getAllUsers = async (request, reply) => {
     try {
-        // Parse và validate query params
         const page = Math.max(parseInt(request.query.page) || 1, 1);
         const limit = Math.min(parseInt(request.query.limit) || 10, 100);
         const sortBy = request.query.sortBy || 'createdAt';
         const sortOrder = request.query.sort === 'asc' ? 1 : -1;
         const search = request.query.search || '';
         const searchFields = request.query.searchFields || '';
-
         const skip = (page - 1) * limit;
-
-        // Danh sách field không dùng để filter
         const excludeFields = ['page', 'limit', 'sort', 'sortBy', 'search', 'searchFields'];
-
-        // Tạo điều kiện lọc cơ bản từ query params
         const filterConditions = [];
-
         for (const key in request.query) {
             if (!excludeFields.includes(key)) {
                 filterConditions.push({ [key]: request.query[key] });
             }
         }
-
-        // Thêm điều kiện tìm kiếm (nếu có)
         if (search && searchFields) {
             const fields = searchFields.split(',');
             const searchConditions = fields.map(field => ({
@@ -57,14 +48,8 @@ exports.getAllUsers = async (request, reply) => {
             }));
             filterConditions.push({ $or: searchConditions });
         }
-
-        // Combine conditions
         const finalFilter = filterConditions.length > 0 ? { $and: filterConditions } : {};
-
-        // Tổng số users
         const totalUsers = await User.countDocuments(finalFilter);
-
-        // Truy vấn dữ liệu users
         const users = await User.find(finalFilter)
             .select('-password')
             .skip(skip)
@@ -72,7 +57,6 @@ exports.getAllUsers = async (request, reply) => {
             .sort({ [sortBy]: sortOrder })
             .populate({ path: 'role', select: 'name' });
 
-        // Trả kết quả
         return reply.send({
             success: true,
             data: users,

@@ -14,28 +14,13 @@ fastify.register(require('./plugins/sensible'));
 fastify.register(require('./plugins/mongoose'));
 fastify.register(require('./plugins/jwt'));
 fastify.register(require('./plugins/email'));
+
 fastify.register(require('./routes/user.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/role.route'), { prefix: process.env.API_PREFIX || '/api' });
-fastify.register(require('./routes/permission.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/auth.route'), { prefix: process.env.API_PREFIX || '/api' });
+fastify.register(require('./routes/permission.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/media.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/notification.route'), { prefix: process.env.API_PREFIX || '/api' });
-
-fastify.get('/api/protected', async (request, reply) => {
-    await fastify.authenticate(request, reply);
-    
-    if (request.user.role !== 'admin') {
-        return reply.code(403).send({ message: 'Forbidden' });
-    }
-
-    return { message: 'Access granted', user: request.user };
-});
-
-
-
-
-
-
 
 fastify.get("/", (req, reply) => { return reply.sendFile("index.html") });
 fastify.get("/view/users", (req, reply) => { return reply.sendFile("user.html") });

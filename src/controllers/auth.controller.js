@@ -17,7 +17,7 @@ exports.login = async (request, reply) => {
             return reply.code(400).send({ message: 'Invalid credentials' });
         }
 
-        // if (!user.isVerified) { return reply.code(403).send({ message: 'Email not verified' });}
+        if (!user.isVerified) { return reply.code(403).send({ message: 'Email not verified' });}
 
         const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '15m' });
         const refreshToken = await reply.jwtSign({ id: user._id }, { expiresIn: '7d' });
@@ -27,8 +27,7 @@ exports.login = async (request, reply) => {
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'Lax',
             path: '/',
-            // domain: process.env.NODE_ENV === 'production' ? '.wedly.info' : undefined,
-            // domain: '.wedly.info',
+            domain: process.env.NODE_ENV === 'production' ? '.wedly.info' : '',
             maxAge: 7 * 24 * 60 * 60
         });
 
@@ -40,6 +39,13 @@ exports.login = async (request, reply) => {
 
 exports.logout = async (request, reply) => {
     reply.clearCookie('refreshToken').send({ message: 'Logged out successfully' });
+};
+
+exports.protectedRoute = async (request, reply) => {
+    if (request.user.role !== 'admin') {
+        return reply.code(403).send({ message: 'Access denied. You must be an admin to access this resource.' });
+    }
+    return reply.send({ message: 'Access granted', user: request.user });
 };
 
 exports.register = async (request, reply) => {
@@ -101,6 +107,8 @@ exports.verifyEmail = async (request, reply) => {
         reply.code(500).send({ message: err.message });
     }
 };
+
+
 
 exports.refreshToken = async (request, reply) => {
     const { token } = request.body;
