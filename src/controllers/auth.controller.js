@@ -11,38 +11,52 @@ exports.login = async (request, reply) => {
             return reply.code(400).send({ message: 'Email and password are required' });
         }
 
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email }).populate({ path: 'role', select: 'name' });
+
 
         if (!user || !(await bcrypt.compare(password, user.password))) {
             return reply.code(400).send({ message: 'Invalid credentials' });
         }
 
-        if (!user.isVerified) { return reply.code(403).send({ message: 'Email not verified' });}
+        // if (!user.isVerified) { return reply.code(403).send({ message: 'Email not verified' });}
 
         const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '15m' });
         const refreshToken = await reply.jwtSign({ id: user._id }, { expiresIn: '7d' });
 
         reply.setCookie('refreshToken', refreshToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'Lax',
+            secure: true,
+            sameSite: 'None',
             path: '/',
-            domain: process.env.NODE_ENV === 'production' ? '.wedly.info' : '',
+            // domain: '.wedly.info',
             maxAge: 7 * 24 * 60 * 60
         });
 
-        return reply.send({ message: 'Login successful', accessToken });
+        return reply.send({
+            message: 'Login successful',
+            accessToken,
+            user
+        });
     } catch (err) {
         return reply.code(500).send({ message: 'Internal server error' });
     }
 };
 
 exports.logout = async (request, reply) => {
-    reply.clearCookie('refreshToken').send({ message: 'Logged out successfully' });
+    reply.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60
+        // domain: '.wedly.info', 
+    });
+    return reply.send({ message: 'Logged out successfully' });
 };
 
 exports.protectedRoute = async (request, reply) => {
-    if (request.user.role !== 'admin') {
+    const user = await User.findById(request.user.id).populate({ path: 'role', select: 'name' });
+    if (user.role.name !== 'admin') {
         return reply.code(403).send({ message: 'Access denied. You must be an admin to access this resource.' });
     }
     return reply.send({ message: 'Access granted', user: request.user });

@@ -6,7 +6,7 @@ async function userRoutes(fastify) {
     fastify.get('/users/:id', userController.getUserById);
     fastify.put('/users/:id', userController.updateUserById);
     fastify.delete('/users/:id', userController.deleteUserById);
-    fastify.get('/users/me', userController.getMe);
+    fastify.get('/users/me', { preHandler: [fastify.authenticate] }, userController.getMe);
 }
 
 module.exports = userRoutes;

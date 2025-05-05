@@ -162,31 +162,8 @@ exports.deleteUserById = async (request, reply) => {
 
 exports.getMe = async (request, reply) => {
     try {
-        const userId = request.user?._id;
-
-        if (!userId) {
-            return reply.code(401).send({
-                status: 'error',
-                message: 'Unauthorized',
-            });
-        }
-
-        const user = await User.findById(userId)
-            .select('-password')
-            .populate({ path: 'role', select: 'name' });
-
-        if (!user) {
-            return reply.code(404).send({
-                status: 'error',
-                message: 'User not found',
-            });
-        }
-
-        reply.send({
-            status: 'success',
-            message: 'User retrieved successfully',
-            data: user.toObject(),
-        });
+        const user = await User.findById(request.user.id).select('-password').populate({ path: 'role', select: 'name' });
+        return reply.send(user);
     } catch (error) {
         reply.internalServerError(error.message || 'Internal Server Error');
     }
