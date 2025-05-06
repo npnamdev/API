@@ -48,7 +48,7 @@ exports.logout = async (request, reply) => {
         secure: true,
         sameSite: 'None',
         path: '/',
-        maxAge: 7 * 24 * 60 * 60
+        maxAge: 7 * 24 * 60 * 60,
         domain: '.wedly.info', 
     });
     return reply.send({ message: 'Logged out successfully' });
