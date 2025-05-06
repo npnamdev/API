@@ -28,7 +28,7 @@ exports.login = async (request, reply) => {
             secure: true,
             sameSite: 'None',
             path: '/',
-            // domain: '.wedly.info',
+            domain: '.wedly.info',
             maxAge: 7 * 24 * 60 * 60
         });
 
@@ -49,7 +49,7 @@ exports.logout = async (request, reply) => {
         sameSite: 'None',
         path: '/',
         maxAge: 7 * 24 * 60 * 60
-        // domain: '.wedly.info', 
+        domain: '.wedly.info', 
     });
     return reply.send({ message: 'Logged out successfully' });
 };
