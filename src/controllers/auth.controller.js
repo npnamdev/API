@@ -20,7 +20,8 @@ exports.login = async (request, reply) => {
 
         // if (!user.isVerified) { return reply.code(403).send({ message: 'Email not verified' });}
 
-        const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '15m' });
+        // const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '15m' });
+        const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '20s' });
         const refreshToken = await reply.jwtSign({ id: user._id }, { expiresIn: '7d' });
 
         reply.setCookie('refreshToken', refreshToken, {
@@ -28,7 +29,7 @@ exports.login = async (request, reply) => {
             secure: true,
             sameSite: 'None',
             path: '/',
-            domain: '.wedly.info',
+            // domain: '.wedly.info',
             maxAge: 7 * 24 * 60 * 60
         });
 
@@ -49,9 +50,19 @@ exports.logout = async (request, reply) => {
         sameSite: 'None',
         path: '/',
         maxAge: 7 * 24 * 60 * 60,
-        domain: '.wedly.info', 
+        // domain: '.wedly.info', 
     });
     return reply.send({ message: 'Logged out successfully' });
+};
+
+exports.refreshToken = async (request, reply) => {
+    const refreshToken = request.cookies.refreshToken;
+    if (!refreshToken) {
+        return reply.status(401).send({ error: 'Refresh token missing' });
+    }
+    const payload = await request.jwtVerify(refreshToken);
+    const accessToken = await reply.jwtSign({ id: payload._id }, { expiresIn: '20s' });
+    return reply.send({ accessToken });
 };
 
 exports.protectedRoute = async (request, reply) => {
@@ -122,25 +133,6 @@ exports.verifyEmail = async (request, reply) => {
     }
 };
 
-
-
-exports.refreshToken = async (request, reply) => {
-    const { token } = request.body;
-    if (!token)
-        return reply.code(401).send({ message: 'Missing token' });
-
-    jwt.verify(token, process.env.REFRESH_SECRET, (err, user) => {
-        if (err) return reply.code(403).send({ message: 'Invalid refresh token' });
-
-        const accessToken = jwt.sign(
-            { id: user.id },
-            process.env.ACCESS_SECRET,
-            { expiresIn: '15m' }
-        );
-
-        reply.send({ accessToken });
-    });
-};
 
 exports.forgotPassword = async (request, reply) => {
     try {
