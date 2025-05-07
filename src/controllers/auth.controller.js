@@ -21,15 +21,16 @@ exports.login = async (request, reply) => {
         // if (!user.isVerified) { return reply.code(403).send({ message: 'Email not verified' });}
 
         // const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '15m' });
-        const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '20s' });
-        const refreshToken = await reply.jwtSign({ id: user._id }, { expiresIn: '7d' });
+        // const refreshToken = await reply.jwtSign({ id: user._id }, { expiresIn: '7d' });
+        const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '5m' });
+        const refreshToken = await reply.jwtSign({ id: user._id }, { expiresIn: '1d' });
 
         reply.setCookie('refreshToken', refreshToken, {
             httpOnly: true,
             secure: true,
             sameSite: 'None',
             path: '/',
-            // domain: '.wedly.info',
+            domain: '.wedly.info',
             maxAge: 7 * 24 * 60 * 60
         });
 
@@ -50,7 +51,7 @@ exports.logout = async (request, reply) => {
         sameSite: 'None',
         path: '/',
         maxAge: 7 * 24 * 60 * 60,
-        // domain: '.wedly.info', 
+        domain: '.wedly.info', 
     });
     return reply.send({ message: 'Logged out successfully' });
 };
@@ -58,11 +59,25 @@ exports.logout = async (request, reply) => {
 exports.refreshToken = async (request, reply) => {
     const refreshToken = request.cookies.refreshToken;
     if (!refreshToken) {
-        return reply.status(401).send({ error: 'Refresh token missing' });
+        return reply.status(401).send({
+            error: 'Refresh token missing',
+            code: 'REFRESH_TOKEN_MISSING'
+        });
     }
-    const payload = await request.jwtVerify(refreshToken);
-    const accessToken = await reply.jwtSign({ id: payload._id }, { expiresIn: '20s' });
-    return reply.send({ accessToken });
+
+    try {
+        const payload = await request.jwtVerify(refreshToken);
+
+        const accessToken = await reply.jwtSign({ id: payload.id }, { expiresIn: '5m' });
+
+        return reply.send({ accessToken });
+    } catch (err) {
+        console.error("Refresh token invalid or expired:", err.message);
+        return reply.status(401).send({
+            error: 'Invalid or expired refresh token',
+            code: err.message === 'jwt expired' ? 'REFRESH_TOKEN_EXPIRED' : 'REFRESH_TOKEN_INVALID'
+        });
+    }
 };
 
 exports.protectedRoute = async (request, reply) => {

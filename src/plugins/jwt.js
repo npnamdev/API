@@ -11,7 +11,10 @@ async function jwtPlugin(fastify) {
         try {
             await request.jwtVerify();
         } catch (err) {
-            return reply.code(401).send({ message: 'Unauthorized: Invalid or missing token.' });
+            return reply.code(401).send({
+                message: 'Unauthorized: Invalid or missing token.' ,
+                code: 'ACCESS_TOKEN_EXPIRED'
+            });
         }
     });
 

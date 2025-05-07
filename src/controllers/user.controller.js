@@ -161,6 +161,7 @@ exports.deleteUserById = async (request, reply) => {
 };
 
 exports.getMe = async (request, reply) => {
+    console.log("request", request.user)
     try {
         const user = await User.findById(request.user.id).select('-password').populate({ path: 'role', select: 'name' });
         return reply.send(user);
