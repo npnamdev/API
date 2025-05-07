@@ -6,20 +6,24 @@ async function jwtPlugin(fastify) {
         cookie: { cookieName: 'refreshToken', signed: false }
     });
 
+    // Middleware xác thực JWT
     fastify.decorate('authenticate', async (request, reply) => {
         try {
-            console.log("Check xem gọi vào chưa");
-
             await request.jwtVerify();
         } catch (err) {
-            reply.send(new Error('Unauthorized'));
+            return reply.code(401).send({ message: 'Unauthorized: Invalid or missing token.' });
         }
     });
 
-    fastify.decorate('authorize', (role) => {
+    // Middleware phân quyền theo role
+    fastify.decorate('authorize', (requiredRole) => {
         return async (request, reply) => {
-            if (!request.user || request.user.role !== role) {
-                return reply.code(403).send({ message: 'Forbidden: You do not have the required permission.' });
+            if (!request.user) {
+                return reply.code(401).send({ message: 'Unauthorized: No user data found in token.' });
+            }
+
+            if (request.user.role !== requiredRole) {
+                return reply.code(403).send({ message: 'Forbidden: Insufficient permissions.' });
             }
         };
     });
