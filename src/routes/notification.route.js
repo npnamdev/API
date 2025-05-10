@@ -1,31 +1,48 @@
-const { createNotification, getNotifications, deleteNotification } = require('../controllers/notification.controller');
+const Notification = require('../models/notification.model');
 
 module.exports = async (fastify, options) => {
     // Lấy danh sách thông báo
     fastify.get('/notifications', async (req, reply) => {
-        const notifications = await getNotifications();
+        const notifications = await Notification.find().sort({ createdAt: -1 });
         reply.send(notifications);
     });
 
     // Tạo thông báo mới
     fastify.post('/notifications', async (req, reply) => {
         const { message, type } = req.body;
-        const notification = await createNotification(message, type);
 
-        // Gửi thông báo đến tất cả client qua Socket.IO
-        fastify.io.emit('notify', notification);  // Sự kiện "notify"
+        const notification = new Notification({
+            message,
+            type,
+            status: 'unread',
+        });
 
+        await notification.save();
+
+        fastify.io.emit('notify', notification);
         reply.send(notification);
+    });
+
+    // Đánh dấu đã đọc
+    fastify.patch('/notifications/:id/read', async (req, reply) => {
+        const { id } = req.params;
+
+        const updated = await Notification.findByIdAndUpdate(
+            id,
+            { status: 'read' },
+            { new: true }
+        );
+
+        reply.send(updated);
     });
 
     // Xóa thông báo
     fastify.delete('/notifications/:id', async (req, reply) => {
         const { id } = req.params;
-        const deletedNotification = await deleteNotification(id);
 
-        // Gửi thông báo xóa đến tất cả client qua Socket.IO
-        fastify.io.emit('deleteNotify', id);  // Sự kiện "deleteNotify"
+        const deleted = await Notification.findByIdAndDelete(id);
 
-        reply.send(deletedNotification);
+        fastify.io.emit('deleteNotify', id);
+        reply.send(deleted);
     });
 };
