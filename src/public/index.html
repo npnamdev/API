@@ -28,9 +28,7 @@
     </div>
 
     <script>
-        const socketUrl = window.location.hostname === "localhost" || window.location.hostname.includes("github.dev")
-            ? "http://localhost:8081"
-            : "https://api.wedly.info";
+        const socketUrl = "https://api.wedly.info";
         const socket = io(socketUrl);
 
         socket.on("connect", () => {
@@ -46,7 +44,7 @@
         <span><strong>${notification.type.toUpperCase()}</strong>: ${notification.message} <em class="text-xs text-gray-600 ml-1">(${notification.status})</em></span>
         <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm self-end sm:self-auto" onclick="deleteNotification('${notification._id}')">Xóa</button>
       `;
-            notificationList.appendChild(li);
+            notificationList.prepend(li); // HIỂN THỊ Ở ĐẦU DANH SÁCH
         });
 
         socket.on("deleteNotify", (id) => {
@@ -75,10 +73,11 @@
 
         async function getNotifications() {
             const response = await fetch('/api/notifications');
-            const notifications = await response.json();
+            const result = await response.json();
+            const notifications = result.data || [];
             const notificationList = document.getElementById("notificationList");
             notificationList.innerHTML = '';
-            notifications.forEach(notification => {
+            notifications.reverse().forEach(notification => {
                 const li = document.createElement('li');
                 li.id = notification._id;
                 li.className = getNotificationClass(notification.type) + " flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 rounded shadow border gap-2";
