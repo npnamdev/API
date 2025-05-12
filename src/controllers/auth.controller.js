@@ -21,7 +21,7 @@ exports.login = async (request, reply) => {
         
           // Tạo thông báo khi đăng nhập từ thiết bị lạ
         const notification = new Notification({
-            message: 'Cảnh báo: Có một lần đăng nhập từ thiết bị lạ.',
+            message: 'Có một lần đăng nhập từ một thiết bị lạ. Nếu bạn không phải là người thực hiện, vui lòng kiểm tra tài khoản của bạn và thay đổi mật khẩu ngay lập tức để bảo mật tài khoản.',
             type: 'warning',
             status: 'unread',
         });
