@@ -22,16 +22,15 @@ exports.login = async (request, reply) => {
           // Tạo thông báo khi đăng nhập từ thiết bị lạ
         const notification = new Notification({
             message: 'Cảnh báo: Có một lần đăng nhập từ thiết bị lạ.',
-            type: 'security',
+            type: 'warning',
             status: 'unread',
-            userId: user._id
         });
 
         // Lưu thông báo vào cơ sở dữ liệu
         await notification.save();
 
         // Phát thông báo qua WebSocket
-        req.server.io.emit('notify', notification);
+        request.server.io.emit('notify', notification);
 
         // if (!user.isVerified) { return reply.code(403).send({ message: 'Email not verified' });}
 
