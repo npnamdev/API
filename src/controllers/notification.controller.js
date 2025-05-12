@@ -61,9 +61,13 @@ exports.createNotification = async (req, reply) => {
 exports.markAsRead = async (req, reply) => {
     try {
         const { id } = req.params;
-        if (!mongoose.Types.ObjectId.isValid(id)) return reply.code(400).send({ status: 'error', message: 'Invalid notification ID' });
         const updated = await Notification.findByIdAndUpdate(id, { status: 'read' }, { new: true });
-        if (!updated) return reply.code(404).send({ status: 'error', message: 'Notification not found' });
+        if (!updated) {
+            return reply.code(404).send({ status: 'error', message: 'Notification not found' });
+        }
+
+        req.server.io.emit('markAsRead', { id });
+
         reply.send({ status: 'success', message: 'Notification marked as read', data: updated });
     } catch (error) {
         reply.code(500).send({ status: 'error', message: error.message || 'Internal Server Error' });
@@ -73,10 +77,6 @@ exports.markAsRead = async (req, reply) => {
 exports.deleteNotification = async (req, reply) => {
     try {
         const { id } = req.params;
-
-        if (!mongoose.Types.ObjectId.isValid(id)) {
-            return reply.code(400).send({ status: 'error', message: 'Invalid notification ID' });
-        }
 
         const deleted = await Notification.findByIdAndDelete(id);
 

@@ -2,11 +2,11 @@
 <html lang="vi">
 
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Fastify + Socket.IO</title>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 
 <body class="bg-gray-100 min-h-screen p-4 sm:p-6 font-sans">
@@ -22,13 +22,12 @@
             </button>
         </div>
 
-        <ul id="notificationList" class="space-y-3">
-            <!-- Notifications will be inserted here -->
-        </ul>
+        <ul id="notificationList" class="space-y-3"></ul>
     </div>
 
     <script>
         const socketUrl = "https://api.wedly.info";
+        // const socketUrl = "https://fuzzy-parakeet-g95vg4wg55jhp7gr-8081.app.github.dev";
         const socket = io(socketUrl);
 
         socket.on("connect", () => {
@@ -36,20 +35,24 @@
         });
 
         socket.on("notify", (notification) => {
-            const notificationList = document.getElementById("notificationList");
-            const li = document.createElement("li");
-            li.id = notification._id;
-            li.className = getNotificationClass(notification.type) + " flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 rounded shadow border gap-2";
-            li.innerHTML = `
-        <span><strong>${notification.type.toUpperCase()}</strong>: ${notification.message} <em class="text-xs text-gray-600 ml-1">(${notification.status})</em></span>
-        <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm self-end sm:self-auto" onclick="deleteNotification('${notification._id}')">Xóa</button>
-      `;
-            notificationList.prepend(li); // HIỂN THỊ Ở ĐẦU DANH SÁCH
+            addNotificationToList(notification);
         });
 
         socket.on("deleteNotify", (id) => {
             const notificationItem = document.getElementById(id);
-            if (notificationItem) notificationItem.remove();
+            if (notificationItem) {
+                notificationItem.remove();
+            }
+        });
+
+        socket.on("markAsRead", ({ id }) => {
+            const el = document.getElementById(id);
+            if (el) {
+                const statusText = el.querySelector(".notification-status");
+                if (statusText) statusText.textContent = "(đã đọc)";
+                const readBtn = el.querySelector(".read-btn");
+                if (readBtn) readBtn.remove();
+            }
         });
 
         const randomMessages = [
@@ -59,8 +62,7 @@
             { message: 'Thông báo lỗi', type: 'error' }
         ];
 
-        const btn = document.getElementById("notifyBtn");
-        btn.addEventListener("click", async () => {
+        document.getElementById("notifyBtn").addEventListener("click", async () => {
             const randomNotification = randomMessages[Math.floor(Math.random() * randomMessages.length)];
             const response = await fetch('/api/notifications', {
                 method: 'POST',
@@ -78,23 +80,74 @@
             const notificationList = document.getElementById("notificationList");
             notificationList.innerHTML = '';
             notifications.reverse().forEach(notification => {
-                const li = document.createElement('li');
-                li.id = notification._id;
-                li.className = getNotificationClass(notification.type) + " flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 rounded shadow border gap-2";
-                li.innerHTML = `
-          <span><strong>${notification.type.toUpperCase()}</strong>: ${notification.message} <em class="text-xs text-gray-600 ml-1">(${notification.status})</em></span>
-          <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm self-end sm:self-auto" onclick="deleteNotification('${notification._id}')">Xóa</button>
-        `;
-                notificationList.appendChild(li);
+                addNotificationToList(notification);
             });
         }
 
         getNotifications();
 
         async function deleteNotification(id) {
-            const response = await fetch(`/api/notifications/${id}`, { method: 'DELETE' });
-            const data = await response.json();
-            console.log("Notification deleted:", data);
+            if (!confirm("Bạn có chắc chắn muốn xoá thông báo này không?")) return;
+            try {
+                const response = await fetch(`/api/notifications/${id}`, { method: 'DELETE' });
+                const data = await response.json();
+                if (data.success || data.status === 'success') {
+                    socket.emit("deleteNotify", id);
+                    const notificationItem = document.getElementById(id);
+                    if (notificationItem) notificationItem.remove();
+                } else {
+                    console.error("Xóa thất bại:", data.message);
+                }
+            } catch (error) {
+                console.error("Lỗi khi xóa thông báo:", error);
+            }
+        }
+
+        async function markAsRead(id) {
+            try {
+                const response = await fetch(`/api/notifications/${id}/read`, { method: 'PATCH' });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    socket.emit("markAsRead", { id });
+
+                    const item = document.getElementById(id);
+                    if (item) {
+                        const status = item.querySelector(".notification-status");
+                        if (status) status.textContent = "(đã đọc)";
+                        const readBtn = item.querySelector(".read-btn");
+                        if (readBtn) readBtn.remove();
+                    }
+                }
+            } catch (error) {
+                console.error("Lỗi khi đánh dấu đã đọc:", error);
+            }
+        }
+
+        function addNotificationToList(notification) {
+            const notificationList = document.getElementById("notificationList");
+            const li = document.createElement("li");
+            li.id = notification._id;
+            li.className =
+                getNotificationClass(notification.type) +
+                " flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 rounded shadow border gap-2";
+
+            const isRead = notification.status === 'read';
+
+            li.innerHTML = `
+        <span>
+          <strong>${notification.type.toUpperCase()}</strong>: ${notification.message}
+          <em class="notification-status text-xs text-gray-600 ml-1">(${notification.status || "mới"})</em>
+        </span>
+        <div class="flex gap-2 justify-end sm:justify-start">
+          ${!isRead
+                    ? `<button class="read-btn bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm" onclick="markAsRead('${notification._id}')">Đã đọc</button>`
+                    : ''
+                }
+          <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm" onclick="deleteNotification('${notification._id}')">Xóa</button>
+        </div>
+      `;
+
+            notificationList.prepend(li);
         }
 
         function getNotificationClass(type) {
