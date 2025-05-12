@@ -55,13 +55,35 @@
             }
         });
 
+        // Random notifications array
         const randomMessages = [
-            { message: 'Thông báo thông thường', type: 'info' },
-            { message: 'Thông báo thành công', type: 'success' },
-            { message: 'Thông báo cảnh báo', type: 'warning' },
-            { message: 'Thông báo lỗi', type: 'error' }
+            { message: "Khóa học 'Lập trình JavaScript cơ bản' đã được mở thành công.", type: "success" },
+            { message: "Khóa học 'Dự án React cuối khóa' đã được hoàn thành và gửi kết quả.", type: "success" },
+            { message: "Khóa học 'Node.js nâng cao' sắp hết hạn đăng ký. Đừng bỏ lỡ!", type: "warning" },
+            { message: "Khóa học 'Thiết kế web với Figma' chưa đủ học viên để mở lớp.", type: "warning" },
+            { message: "Lỗi hệ thống: Không thể tải thông tin khóa học từ cơ sở dữ liệu.", type: "error" },
+            { message: "Khóa học 'Lập trình iOS' đã gặp sự cố trong quá trình cập nhật thông tin.", type: "error" },
+            { message: "Học viên 'Nguyễn Văn A' đã đăng ký khóa học 'Lập trình Frontend'.", type: "success" },
+            { message: "Học viên 'Trần Thị B' đã hoàn thành bài kiểm tra cuối khóa 'JavaScript cơ bản'.", type: "success" },
+            { message: "Học viên 'Nguyễn Thị C' đã bỏ qua bài kiểm tra trong khóa học 'React'.", type: "warning" },
+            { message: "Học viên 'Lê Minh D' chưa xác nhận email để hoàn tất đăng ký.", type: "warning" },
+            { message: "Lỗi hệ thống: Không thể đăng ký học viên vào khóa học 'Dự án thực tế'.", type: "error" },
+            { message: "Học viên 'Phạm Văn E' đã gặp lỗi trong quá trình thanh toán.", type: "error" },
+            { message: "Thanh toán cho khóa học 'Lập trình Python' đã thành công.", type: "success" },
+            { message: "Học viên 'Vũ Hoàng G' đã hoàn tất thanh toán khóa học 'Web Design'.", type: "success" },
+            { message: "Có một giao dịch thanh toán chưa hoàn tất cho học viên 'Đặng Tuấn H'.", type: "warning" },
+            { message: "Cảnh báo: Học viên 'Lê Minh K' đã hủy thanh toán cho khóa học 'React'.", type: "warning" },
+            { message: "Lỗi thanh toán: Không thể xử lý thẻ tín dụng của học viên 'Bùi Minh T'.", type: "error" },
+            { message: "Lỗi hệ thống: Giao dịch thanh toán cho khóa học 'Backend with Node.js' không thành công.", type: "error" },
+            { message: "Hệ thống đã được nâng cấp thành công lên phiên bản mới nhất.", type: "info" },
+            { message: "Dữ liệu hệ thống đã được sao lưu vào lúc 3:00 AM.", type: "info" },
+            { message: "Lỗi hệ thống: Dịch vụ gửi email tạm thời không khả dụng.", type: "error" },
+            { message: "Lỗi hệ thống: Máy chủ của chúng tôi đang gặp sự cố và sẽ sớm được khôi phục.", type: "error" },
+            { message: "Cảnh báo khẩn cấp: Hệ thống phát hiện sự cố bảo mật nghiêm trọng và đang được xử lý.", type: "error" },
+            { message: "Hệ thống đang bảo trì và sẽ trở lại trong vòng 30 phút.", type: "info" },
         ];
 
+        // Click event for the "notifyBtn"
         document.getElementById("notifyBtn").addEventListener("click", async () => {
             const randomNotification = randomMessages[Math.floor(Math.random() * randomMessages.length)];
             const response = await fetch('/api/notifications', {
@@ -73,6 +95,7 @@
             console.log("Notification created:", data);
         });
 
+        // Function to fetch notifications and display them
         async function getNotifications() {
             const response = await fetch('/api/notifications');
             const result = await response.json();
@@ -86,6 +109,7 @@
 
         getNotifications();
 
+        // Delete notification
         async function deleteNotification(id) {
             if (!confirm("Bạn có chắc chắn muốn xoá thông báo này không?")) return;
             try {
@@ -103,6 +127,7 @@
             }
         }
 
+        // Mark notification as read
         async function markAsRead(id) {
             try {
                 const response = await fetch(`/api/notifications/${id}/read`, { method: 'PATCH' });
@@ -123,6 +148,7 @@
             }
         }
 
+        // Function to add notification to the list
         function addNotificationToList(notification) {
             const notificationList = document.getElementById("notificationList");
             const li = document.createElement("li");
@@ -150,6 +176,7 @@
             notificationList.prepend(li);
         }
 
+        // Function to get the CSS class based on notification type
         function getNotificationClass(type) {
             switch (type) {
                 case 'info':
