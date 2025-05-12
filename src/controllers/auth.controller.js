@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const User = require('../models/user.model');
 const Role = require('../models/role.model');
 const sendEmail = require('../utils/mailer');
+const Notification = require('../models/notification.model');
 
 exports.login = async (request, reply) => {
     try {
@@ -17,6 +18,20 @@ exports.login = async (request, reply) => {
         if (!user || !(await bcrypt.compare(password, user.password))) {
             return reply.code(400).send({ message: 'Invalid credentials' });
         }
+        
+          // Tạo thông báo khi đăng nhập từ thiết bị lạ
+        const notification = new Notification({
+            message: 'Cảnh báo: Có một lần đăng nhập từ thiết bị lạ.',
+            type: 'security',
+            status: 'unread',
+            userId: user._id
+        });
+
+        // Lưu thông báo vào cơ sở dữ liệu
+        await notification.save();
+
+        // Phát thông báo qua WebSocket
+        req.server.io.emit('notify', notification);
 
         // if (!user.isVerified) { return reply.code(403).send({ message: 'Email not verified' });}
 
