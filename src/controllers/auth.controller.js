@@ -127,6 +127,15 @@ exports.register = async (request, reply) => {
                    <p>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.</p>`,
         });
 
+        const notification = new Notification({
+            message: `Một người dùng mới đã đăng ký tài khoản: ${username} (${email}). Vui lòng kiểm tra và xác minh thông tin.`,
+            type: 'info',
+            status: 'unread',
+        });
+
+        await notification.save();
+        request.server.io.emit('notify', notification);
+
         reply.code(201).send({ message: 'Đăng ký thành công. Vui lòng kiểm tra email để xác minh trong 5 phút.' });
     } catch (err) {
         reply.code(500).send({ message: err.message });
@@ -147,7 +156,7 @@ exports.verifyEmail = async (request, reply) => {
 
         user.isVerified = true;
         user.verificationToken = undefined;
-        user.verificationTokenExpires = undefined; 
+        user.verificationTokenExpires = undefined;
         await user.save();
 
         reply.code(200).send({ message: 'Xác minh email thành công' });
