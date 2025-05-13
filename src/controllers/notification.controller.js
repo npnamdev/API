@@ -1,17 +1,58 @@
 const Notification = require('../models/notification.model');
 
+// exports.getNotifications = async (req, reply) => {
+//     try {
+//         const { page = 1, limit = 30, search = '', sort = 'desc' } = req.query;
+//         const pageNumber = Math.max(1, parseInt(page));
+//         const pageSize = Math.min(30, Math.max(1, parseInt(limit)));
+//         const skip = (pageNumber - 1) * pageSize;
+
+//         const searchQuery = search
+//             ? { message: { $regex: search, $options: 'i' } }
+//             : {};
+
+//         const sortOrder = sort === 'asc' ? 1 : -1;
+
+//         const notifications = await Notification.find(searchQuery)
+//             .skip(skip)
+//             .limit(pageSize)
+//             .sort({ createdAt: sortOrder });
+
+//         const total = await Notification.countDocuments(searchQuery);
+//         const totalPages = Math.ceil(total / pageSize);
+
+//         reply.send({
+//             status: 'success',
+//             message: 'Notifications retrieved successfully',
+//             data: notifications,
+//             pagination: {
+//                 currentPage: pageNumber,
+//                 totalPages,
+//                 totalItems: total,
+//                 limit: pageSize,
+//             },
+//         });
+//     } catch (error) {
+//         reply.code(500).send({
+//             status: 'error',
+//             message: error.message,
+//         });
+//     }
+// };
+
 exports.getNotifications = async (req, reply) => {
     try {
-        const { page = 1, limit = 30, search = '', sort = 'desc' } = req.query;
+        const { page = 1, limit = 30, search = '', sort = 'desc', status } = req.query;
+
         const pageNumber = Math.max(1, parseInt(page));
         const pageSize = Math.min(30, Math.max(1, parseInt(limit)));
         const skip = (pageNumber - 1) * pageSize;
-
-        const searchQuery = search
-            ? { message: { $regex: search, $options: 'i' } }
-            : {};
-
         const sortOrder = sort === 'asc' ? 1 : -1;
+
+        const searchQuery = {
+            ...(search ? { message: { $regex: search, $options: 'i' } } : {}),
+            ...(status === 'read' || status === 'unread' ? { status } : {}),
+        };
 
         const notifications = await Notification.find(searchQuery)
             .skip(skip)
