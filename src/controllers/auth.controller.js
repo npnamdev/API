@@ -18,21 +18,15 @@ exports.login = async (request, reply) => {
         if (!user || !(await bcrypt.compare(password, user.password))) {
             return reply.code(400).send({ message: 'Invalid credentials' });
         }
-        
-          // Tạo thông báo khi đăng nhập từ thiết bị lạ
+
         const notification = new Notification({
-            message: 'Có một lần đăng nhập từ một thiết bị lạ. Nếu bạn không phải là người thực hiện, vui lòng kiểm tra tài khoản của bạn và thay đổi mật khẩu ngay lập tức để bảo mật tài khoản.',
+            message: 'Phát hiện đăng nhập từ thiết bị lạ. Nếu không phải bạn, hãy đổi mật khẩu ngay để đảm bảo an toàn.',
             type: 'warning',
             status: 'unread',
         });
 
-        // Lưu thông báo vào cơ sở dữ liệu
         await notification.save();
-
-        // Phát thông báo qua WebSocket
         request.server.io.emit('notify', notification);
-
-        // if (!user.isVerified) { return reply.code(403).send({ message: 'Email not verified' });}
 
         // const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '15m' });
         // const refreshToken = await reply.jwtSign({ id: user._id }, { expiresIn: '7d' });
@@ -65,7 +59,7 @@ exports.logout = async (request, reply) => {
         sameSite: 'None',
         path: '/',
         maxAge: 7 * 24 * 60 * 60,
-        domain: '.wedly.info', 
+        domain: '.wedly.info',
     });
     return reply.send({ message: 'Logged out successfully' });
 };
@@ -94,14 +88,6 @@ exports.refreshToken = async (request, reply) => {
     }
 };
 
-exports.protectedRoute = async (request, reply) => {
-    const user = await User.findById(request.user.id).populate({ path: 'role', select: 'name' });
-    if (user.role.name !== 'admin') {
-        return reply.code(403).send({ message: 'Access denied. You must be an admin to access this resource.' });
-    }
-    return reply.send({ message: 'Access granted', user: request.user });
-};
-
 exports.register = async (request, reply) => {
     try {
         const { username, email, password, fullName } = request.body;
@@ -112,6 +98,7 @@ exports.register = async (request, reply) => {
         }
 
         const verificationToken = crypto.randomBytes(32).toString('hex');
+        const tokenExpires = Date.now() + 5 * 60 * 1000; // 5 phút
 
         const userRole = await Role.findOne({ name: 'user' });
         if (!userRole) {
@@ -125,20 +112,22 @@ exports.register = async (request, reply) => {
             fullName,
             role: userRole._id,
             verificationToken,
+            verificationTokenExpires: new Date(tokenExpires),
         });
 
         await user.save();
 
-        const verifyUrl = `https://your-domain.com/verify-email?token=${verificationToken}`;
+        const verifyUrl = `https://quizify.wedly.info/verify-email?token=${verificationToken}`;
         await sendEmail({
             to: email,
             subject: 'Xác minh email của bạn',
-            html: `<p>Chào ${username},</p>
-                   <p>Vui lòng xác minh email của bạn bằng cách nhấn vào link bên dưới:</p>
-                   <a href="${verifyUrl}">Xác minh email</a>`,
+            html: `<p>Xin chào <strong>${username}</strong>,</p>
+                   <p>Vui lòng xác minh email trong vòng 5 phút bằng cách nhấn vào liên kết bên dưới:</p>
+                   <p><a href="${verifyUrl}">Xác minh email</a></p>
+                   <p>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.</p>`,
         });
 
-        reply.code(201).send({ message: 'Đăng ký thành công. Vui lòng kiểm tra email để xác minh.' });
+        reply.code(201).send({ message: 'Đăng ký thành công. Vui lòng kiểm tra email để xác minh trong 5 phút.' });
     } catch (err) {
         reply.code(500).send({ message: err.message });
     }
@@ -148,19 +137,28 @@ exports.verifyEmail = async (request, reply) => {
     try {
         const { token } = request.query;
         const user = await User.findOne({ verificationToken: token });
+        if (!user) {
+            return reply.code(400).send({ message: 'Token không hợp lệ' });
+        }
 
-        if (!user)
-            return reply.code(400).send({ message: 'Invalid or expired token' });
+        if (user.verificationTokenExpires < Date.now()) {
+            return reply.code(400).send({ message: 'Token đã hết hạn' });
+        }
 
-        user.verificationToken = undefined;
         user.isVerified = true;
+        user.verificationToken = undefined;
+        user.verificationTokenExpires = undefined; 
         await user.save();
 
-        reply.send({ message: 'Email verified successfully' });
+        reply.code(200).send({ message: 'Xác minh email thành công' });
     } catch (err) {
         reply.code(500).send({ message: err.message });
     }
 };
+
+
+
+// Làm sau
 
 
 exports.forgotPassword = async (request, reply) => {
