@@ -24,10 +24,10 @@ exports.login = async (request, reply) => {
         const notification = new Notification({
             message: `
     <span class="text-sm text-gray-800">
-      <span class="text-yellow-600 font-semibold">Phát hiện đăng nhập từ thiết bị lạ</span> 
+      <span class="text-yellow-600 font-medium">Phát hiện đăng nhập từ thiết bị lạ</span> 
       từ IP <strong class="text-blue-600">${ipAddress}</strong>. 
       Nếu không phải bạn, hãy 
-      <strong class="text-red-600">đổi mật khẩu ngay</strong> 
+      <span class="text-red-600">đổi mật khẩu ngay</> 
       để đảm bảo an toàn.
     </span>
   `,
@@ -141,9 +141,9 @@ exports.register = async (request, reply) => {
             message: `
     <span class="text-sm text-gray-800">
       Một người dùng mới đã đăng ký tài khoản: 
-      <strong class="text-blue-600">${username}</strong> 
+      <strong class="text-blue-600 font-medium">${username}</strong> 
       (<span class="text-green-600">${email}</span>). 
-      <span class="text-red-500 font-semibold">Vui lòng kiểm tra và xác minh thông tin.</span>
+      <span class="text-red-500 font-medium">Vui lòng kiểm tra và xác minh thông tin.</span>
     </span>
   `,
             type: 'info',
