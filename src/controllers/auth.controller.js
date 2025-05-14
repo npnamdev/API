@@ -19,8 +19,18 @@ exports.login = async (request, reply) => {
             return reply.code(400).send({ message: 'Invalid credentials' });
         }
 
+        const ipAddress = request.ip;
+
         const notification = new Notification({
-            message: 'Phát hiện đăng nhập từ thiết bị lạ. Nếu không phải bạn, hãy đổi mật khẩu ngay để đảm bảo an toàn.',
+            message: `
+    <span class="text-sm text-gray-800">
+      <span class="text-yellow-600 font-semibold">Phát hiện đăng nhập từ thiết bị lạ</span> 
+      từ IP <strong class="text-blue-600">${ipAddress}</strong>. 
+      Nếu không phải bạn, hãy 
+      <strong class="text-red-600">đổi mật khẩu ngay</strong> 
+      để đảm bảo an toàn.
+    </span>
+  `,
             type: 'warning',
             status: 'unread',
         });
@@ -128,7 +138,14 @@ exports.register = async (request, reply) => {
         });
 
         const notification = new Notification({
-            message: `Một người dùng mới đã đăng ký tài khoản: ${username} (${email}). Vui lòng kiểm tra và xác minh thông tin.`,
+            message: `
+    <span class="text-sm text-gray-800">
+      Một người dùng mới đã đăng ký tài khoản: 
+      <strong class="text-blue-600">${username}</strong> 
+      (<span class="text-green-600">${email}</span>). 
+      <span class="text-red-500 font-semibold">Vui lòng kiểm tra và xác minh thông tin.</span>
+    </span>
+  `,
             type: 'info',
             status: 'unread',
         });
