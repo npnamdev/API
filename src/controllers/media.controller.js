@@ -46,15 +46,110 @@ const createMedia = async (req, reply) => {
   }
 };
 
-// Get all media
-const getAllMedia = async (req, reply) => {
+// Upload multiple files to Cloudinary
+const createMultipleMedia = async (req, reply) => {
   try {
-    const medias = await Media.find(); // Fetch all media
-    reply.status(200).send(medias);
+    if (!req.isMultipart()) {
+      return reply.status(400).send({ message: 'No files uploaded' });
+    }
+
+    const parts = await req.files(); // Lấy tất cả các file
+    const results = [];
+
+    for (const part of parts) {
+      const fileBuffer = await part.toBuffer();
+
+      const uploadStream = () =>
+        new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { folder: 'uploads' },
+            (error, result) => {
+              if (result) resolve(result);
+              else reject(error);
+            }
+          );
+          streamifier.createReadStream(fileBuffer).pipe(stream);
+        });
+
+      const uploadResult = await uploadStream();
+
+      const {
+        url,
+        secure_url,
+        public_id,
+        format,
+        resource_type,
+        width,
+        height,
+        bytes,
+        original_filename,
+      } = uploadResult;
+
+      const newMedia = new Media({
+        url,
+        secure_url,
+        public_id,
+        format,
+        resource_type,
+        width,
+        height,
+        bytes,
+        original_filename,
+      });
+
+      await newMedia.save();
+      results.push(newMedia);
+    }
+
+    reply.status(201).send({ files: results });
   } catch (err) {
-    reply.status(500).send({ message: 'Error fetching media', error: err });
+    reply.status(500).send({ message: 'Error uploading files', error: err });
   }
 };
+
+const getAllMedia = async (req, reply) => {
+  try {
+    const { page = 1, limit = 10, search = '', sort = 'desc' } = req.query;
+    const pageNumber = Math.max(1, parseInt(page));
+    const pageSize = Math.max(1, parseInt(limit));
+    const skip = (pageNumber - 1) * pageSize;
+
+    // Tìm kiếm theo tên media (hoặc bạn có thể thay đổi theo trường phù hợp)
+    const searchQuery = search
+      ? { name: { $regex: search, $options: 'i' } }
+      : {};
+
+    // Sắp xếp theo ngày tạo, mặc định giảm dần
+    const sortOrder = sort === 'asc' ? 1 : -1;
+
+    const medias = await Media.find(searchQuery)
+      .skip(skip)
+      .limit(pageSize)
+      .sort({ createdAt: sortOrder });
+
+    const totalMedias = await Media.countDocuments(searchQuery);
+    const totalPages = Math.ceil(totalMedias / pageSize);
+
+    reply.status(200).send({
+      status: 'success',
+      message: 'Media retrieved successfully',
+      data: medias,
+      pagination: {
+        currentPage: pageNumber,
+        totalPages,
+        totalMedias,
+        limit: pageSize,
+      },
+    });
+  } catch (err) {
+    reply.status(500).send({
+      status: 'error',
+      message: 'Error fetching media',
+      error: err.message || err,
+    });
+  }
+};
+
 
 // Get a media by ID
 const getMediaById = async (req, reply) => {

@@ -22,6 +22,7 @@ fastify.register(require('./routes/permission.route'), { prefix: process.env.API
 fastify.register(require('./routes/media.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/notification.route'), { prefix: process.env.API_PREFIX || '/api' });
 
+
 fastify.get("/", (req, reply) => { return reply.sendFile("index.html") });
 fastify.get("/view/users", (req, reply) => { return reply.sendFile("user.html") });
 
