@@ -244,22 +244,6 @@ const getMediaById = async (req, reply) => {
   }
 };
 
-// Update a media by ID
-const updateMediaById = async (req, reply) => {
-  try {
-    const { url, secure_url, public_id, format, resource_type, width, height, bytes, original_filename } = req.body;
-    const updatedMedia = await Media.findByIdAndUpdate(req.params.id, {
-      url, secure_url, public_id, format, resource_type, width, height, bytes, original_filename
-    }, { new: true }); // `new: true` to return the updated document
-    if (!updatedMedia) {
-      return reply.status(404).send({ message: 'Media not found' });
-    }
-    reply.status(200).send(updatedMedia);
-  } catch (err) {
-    reply.status(500).send({ message: 'Error updating media', error: err });
-  }
-};
-
 // Delete a media by ID
 const deleteMediaById = async (req, reply) => {
   try {
@@ -273,12 +257,32 @@ const deleteMediaById = async (req, reply) => {
   }
 };
 
+// Delete multiple medias by IDs
+const deleteManyMedia = async (req, reply) => {
+  try {
+    const { ids } = req.body; // expect: { ids: ["id1", "id2", ...] }
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return reply.status(400).send({ message: 'Danh sách ID không hợp lệ' });
+    }
+
+    const result = await Media.deleteMany({ _id: { $in: ids } });
+
+    reply.status(200).send({
+      message: 'Xoá media thành công',
+      deletedCount: result.deletedCount,
+    });
+  } catch (err) {
+    reply.status(500).send({ message: 'Lỗi khi xoá media', error: err });
+  }
+};
+
 module.exports = {
   createMedia,
   uploadToImageKit,
   uploadToUploadcare,
   getAllMedia,
   getMediaById,
-  updateMediaById,
-  deleteMediaById
+  deleteMediaById,
+  deleteManyMedia
 };
