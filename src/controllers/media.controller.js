@@ -77,29 +77,94 @@ const uploadToImageKit = async (req, reply) => {
   }
 };
 
+// const createMedia = async (req, reply) => {
+//   try {
+//     if (!req.isMultipart()) { return reply.status(400).send({ message: 'No file uploaded' }); }
+//     const data = await req.file();
+//     const fileBuffer = await data.toBuffer();
+
+//     const uploadStream = () =>
+//       new Promise((resolve, reject) => {
+//         const stream = cloudinary.uploader.upload_stream(
+//           { folder: 'uploads' },
+//           (error, result) => {
+//             if (result) {
+//               resolve(result);
+//             } else {
+//               reject(error);
+//             }
+//           }
+//         );
+//         streamifier.createReadStream(fileBuffer).pipe(stream);
+//       });
+
+//     const uploadResult = await uploadStream();
+//     const { url, secure_url, public_id, format, resource_type, width, height, bytes, original_filename } = uploadResult;
+//     const newMedia = new Media({
+//       url,
+//       secure_url,
+//       public_id,
+//       format,
+//       resource_type,
+//       width,
+//       height,
+//       bytes,
+//       original_filename
+//     });
+
+//     await newMedia.save();
+
+//     reply.status(201).send(newMedia);
+//   } catch (err) {
+//     reply.status(500).send({ message: 'Error creating media', error: err });
+//   }
+// };
+
 const createMedia = async (req, reply) => {
   try {
-    if (!req.isMultipart()) { return reply.status(400).send({ message: 'No file uploaded' }); }
-    const data = await req.file();
-    const fileBuffer = await data.toBuffer();
+    if (!req.isMultipart()) {
+      return reply.status(400).send({ message: 'No file uploaded' });
+    }
 
+    const data = await req.file(); // lấy file từ multipart
+    const fileBuffer = await data.toBuffer(); // lấy nội dung buffer
+    const originalFilename = data.filename || 'file'; // fallback nếu không có tên
+
+    // Cloudinary upload stream
     const uploadStream = () =>
       new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-          { folder: 'uploads' },
+          {
+            folder: 'uploads',
+            public_id: originalFilename.split('.')[0], // đặt tên file không có đuôi mở rộng
+            use_filename: true,
+            unique_filename: false, // giữ tên gốc, không thêm chuỗi ngẫu nhiên
+            resource_type: 'auto', // tự động nhận diện (ảnh, video, v.v.)
+          },
           (error, result) => {
-            if (result) {
-              resolve(result);
-            } else {
-              reject(error);
-            }
+            if (result) resolve(result);
+            else reject(error);
           }
         );
+
         streamifier.createReadStream(fileBuffer).pipe(stream);
       });
 
     const uploadResult = await uploadStream();
-    const { url, secure_url, public_id, format, resource_type, width, height, bytes, original_filename } = uploadResult;
+
+    // Destructure kết quả trả về từ Cloudinary
+    const {
+      url,
+      secure_url,
+      public_id,
+      format,
+      resource_type,
+      width,
+      height,
+      bytes,
+    } = uploadResult;
+
+    // Tạo bản ghi media mới
     const newMedia = new Media({
       url,
       secure_url,
@@ -109,14 +174,15 @@ const createMedia = async (req, reply) => {
       width,
       height,
       bytes,
-      original_filename
+      original_filename: originalFilename,
     });
 
     await newMedia.save();
 
     reply.status(201).send(newMedia);
   } catch (err) {
-    reply.status(500).send({ message: 'Error creating media', error: err });
+    console.error('[createMedia error]', err);
+    reply.status(500).send({ message: 'Error creating media', error: err.message });
   }
 };
 
