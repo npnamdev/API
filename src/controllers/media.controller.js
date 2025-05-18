@@ -1,6 +1,41 @@
 const cloudinary = require('cloudinary').v2;
 const Media = require('../models/media.model');
 const streamifier = require('streamifier');
+const imagekit = require('../config/imagekit.config');
+
+
+const uploadToImageKit = async (req, reply) => {
+  try {
+    if (!req.isMultipart()) {
+      return reply.status(400).send({ message: 'No file uploaded' });
+    }
+
+    const data = await req.file();
+    const fileBuffer = await data.toBuffer();
+
+    const uploadResponse = await imagekit.upload({
+      file: fileBuffer.toString('base64'), // chuyển base64
+      fileName: data.filename,
+      folder: '/uploads',
+    });
+
+    // Tạo bản ghi media mới
+    const newMedia = new Media({
+      url: uploadResponse.url,
+      fileId: uploadResponse.fileId,
+      thumbnailUrl: uploadResponse.thumbnailUrl,
+      fileName: data.filename,
+      // Bạn có thể thêm các trường khác nếu cần như size, format,...
+    });
+
+    await newMedia.save();
+
+    reply.status(201).send(newMedia);
+  } catch (err) {
+    console.error(err);
+    reply.status(500).send({ message: 'Upload failed', error: err });
+  }
+};
 
 // Create a new media and upload to Cloudinary
 const createMedia = async (req, reply) => {
@@ -12,7 +47,7 @@ const createMedia = async (req, reply) => {
     const uploadStream = () =>
       new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-          { folder: 'uploads' }, 
+          { folder: 'uploads' },
           (error, result) => {
             if (result) {
               resolve(result);
@@ -195,6 +230,7 @@ const deleteMediaById = async (req, reply) => {
 
 module.exports = {
   createMedia,
+  uploadToImageKit,
   getAllMedia,
   getMediaById,
   updateMediaById,
