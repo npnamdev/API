@@ -1,8 +1,45 @@
 const cloudinary = require('cloudinary').v2;
 const Media = require('../models/media.model');
 const streamifier = require('streamifier');
-const imagekit = require('../config/imagekit.config');
 
+const imagekit = require('../config/imagekit.config');
+const uploadcare = require('../config/uploadcare.config');
+
+const uploadToUploadcare = async (req, reply) => {
+  try {
+    if (!req.isMultipart()) {
+      return reply.status(400).send({ message: 'No file uploaded' });
+    }
+
+    const data = await req.file();
+    const buffer = await data.toBuffer();
+
+    const result = await uploadcare.uploadFile(buffer, {
+      fileName: data.filename,
+    });
+
+    const imageInfo = result.imageInfo || {};
+
+    const newMedia = new Media({
+      url: result.cdnUrl,
+      secure_url: result.cdnUrl, // vì là HTTPS
+      public_id: result.uuid,
+      format: imageInfo.format || result.mimeType?.split('/')[1], // fallback
+      resource_type: result.mimeType,
+      width: imageInfo.width,
+      height: imageInfo.height,
+      bytes: result.size,
+      original_filename: result.originalFilename || data.filename,
+    });
+
+    await newMedia.save();
+
+    reply.status(201).send(newMedia);
+  } catch (err) {
+    console.error(err);
+    reply.status(500).send({ message: 'Upload failed', error: err.message });
+  }
+};
 
 const uploadToImageKit = async (req, reply) => {
   try {
@@ -40,7 +77,6 @@ const uploadToImageKit = async (req, reply) => {
   }
 };
 
-// Create a new media and upload to Cloudinary
 const createMedia = async (req, reply) => {
   try {
     if (!req.isMultipart()) { return reply.status(400).send({ message: 'No file uploaded' }); }
@@ -83,6 +119,7 @@ const createMedia = async (req, reply) => {
     reply.status(500).send({ message: 'Error creating media', error: err });
   }
 };
+
 
 
 const getAllMedia = async (req, reply) => {
@@ -173,6 +210,7 @@ const deleteMediaById = async (req, reply) => {
 module.exports = {
   createMedia,
   uploadToImageKit,
+  uploadToUploadcare,
   getAllMedia,
   getMediaById,
   updateMediaById,
