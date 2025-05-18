@@ -14,18 +14,21 @@ const uploadToImageKit = async (req, reply) => {
     const fileBuffer = await data.toBuffer();
 
     const uploadResponse = await imagekit.upload({
-      file: fileBuffer.toString('base64'), // chuyển base64
+      file: fileBuffer.toString('base64'),
       fileName: data.filename,
       folder: '/uploads',
     });
 
-    // Tạo bản ghi media mới
     const newMedia = new Media({
       url: uploadResponse.url,
-      fileId: uploadResponse.fileId,
-      thumbnailUrl: uploadResponse.thumbnailUrl,
-      fileName: data.filename,
-      // Bạn có thể thêm các trường khác nếu cần như size, format,...
+      secure_url: uploadResponse.url, // ImageKit thường dùng https
+      public_id: uploadResponse.fileId,
+      format: uploadResponse.fileExtension,
+      resource_type: uploadResponse.fileType,
+      width: uploadResponse.width,
+      height: uploadResponse.height,
+      bytes: uploadResponse.size || uploadResponse.fileSize, // dùng field phù hợp
+      original_filename: uploadResponse.name,
     });
 
     await newMedia.save();
@@ -33,7 +36,7 @@ const uploadToImageKit = async (req, reply) => {
     reply.status(201).send(newMedia);
   } catch (err) {
     console.error(err);
-    reply.status(500).send({ message: 'Upload failed', error: err });
+    reply.status(500).send({ message: 'Upload failed', error: err.message });
   }
 };
 
@@ -81,66 +84,6 @@ const createMedia = async (req, reply) => {
   }
 };
 
-// Upload multiple files to Cloudinary
-const createMultipleMedia = async (req, reply) => {
-  try {
-    if (!req.isMultipart()) {
-      return reply.status(400).send({ message: 'No files uploaded' });
-    }
-
-    const parts = await req.files(); // Lấy tất cả các file
-    const results = [];
-
-    for (const part of parts) {
-      const fileBuffer = await part.toBuffer();
-
-      const uploadStream = () =>
-        new Promise((resolve, reject) => {
-          const stream = cloudinary.uploader.upload_stream(
-            { folder: 'uploads' },
-            (error, result) => {
-              if (result) resolve(result);
-              else reject(error);
-            }
-          );
-          streamifier.createReadStream(fileBuffer).pipe(stream);
-        });
-
-      const uploadResult = await uploadStream();
-
-      const {
-        url,
-        secure_url,
-        public_id,
-        format,
-        resource_type,
-        width,
-        height,
-        bytes,
-        original_filename,
-      } = uploadResult;
-
-      const newMedia = new Media({
-        url,
-        secure_url,
-        public_id,
-        format,
-        resource_type,
-        width,
-        height,
-        bytes,
-        original_filename,
-      });
-
-      await newMedia.save();
-      results.push(newMedia);
-    }
-
-    reply.status(201).send({ files: results });
-  } catch (err) {
-    reply.status(500).send({ message: 'Error uploading files', error: err });
-  }
-};
 
 const getAllMedia = async (req, reply) => {
   try {
@@ -184,7 +127,6 @@ const getAllMedia = async (req, reply) => {
     });
   }
 };
-
 
 // Get a media by ID
 const getMediaById = async (req, reply) => {
