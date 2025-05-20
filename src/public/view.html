@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Prism JSON Formatter - Quản lý API</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/themes/prism-okaidia.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/prism.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/components/prism-json.min.js"></script>
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-900 text-white min-h-screen flex flex-col">
+  <!-- Header -->
+  <header class="bg-gray-800 shadow-md p-4">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+      <h1 class="text-xl font-bold">🔧 JSON Formatter</h1>
+      <span class="text-sm text-gray-400">Hiển thị dữ liệu từ API</span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 p-4">
+    <div class="max-w-7xl mx-auto space-y-4">
+      <!-- API Input -->
+      <div>
+        <label for="apiInput" class="block mb-1 text-sm">🔗 Nhập đường dẫn API:</label>
+        <div class="flex flex-col sm:flex-row gap-2">
+          <input id="apiInput" type="text" placeholder="https://api.example.com/data"
+            class="flex-1 p-2 rounded bg-gray-700 text-white border border-gray-600" />
+          <button onclick="fetchApiData()"
+            class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-500 transition">Tải</button>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div id="status" class="text-sm text-gray-400"></div>
+
+      <!-- Actions -->
+      <div class="flex gap-2">
+        <button onclick="copyJson()" class="bg-green-600 px-4 py-2 rounded hover:bg-green-500 transition text-sm">📋
+          Copy JSON</button>
+        <button onclick="downloadJson()" class="bg-yellow-600 px-4 py-2 rounded hover:bg-yellow-500 transition text-sm">💾
+          Tải xuống</button>
+        <button onclick="clearJson()" class="bg-red-600 px-4 py-2 rounded hover:bg-red-500 transition text-sm">🧹
+          Xóa</button>
+      </div>
+
+      <!-- JSON Display -->
+      <div class="bg-gray-800 rounded-lg shadow-inner overflow-auto max-h-[70vh] p-4">
+        <pre id="jsonDisplay" class="language-json font-mono text-sm md:text-base whitespace-pre-wrap"></pre>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 p-4 text-center text-sm text-gray-500">
+    &copy; 2025 Prism JSON Formatter. All rights reserved.
+  </footer>
+
+  <!-- Script -->
+  <script>
+    async function fetchApiData() {
+      const api = document.getElementById('apiInput').value.trim();
+      const jsonDisplay = document.getElementById('jsonDisplay');
+      const status = document.getElementById('status');
+
+      if (!api) {
+        status.textContent = '❌ Vui lòng nhập đường dẫn API!';
+        return;
+      }
+
+      status.textContent = '⏳ Đang tải dữ liệu...';
+      jsonDisplay.textContent = '';
+
+      try {
+        // Thêm proxy nếu cần (bỏ comment nếu bạn dùng)
+        // const proxy = 'https://cors-anywhere.herokuapp.com/';
+        // const response = await fetch(proxy + api);
+
+        const response = await fetch(api);
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const data = await response.json();
+          const formatted = JSON.stringify(data, null, 2);
+          jsonDisplay.textContent = formatted;
+          Prism.highlightElement(jsonDisplay);
+          status.textContent = '✅ Tải dữ liệu thành công.';
+        } else {
+          throw new Error("Phản hồi không phải JSON!");
+        }
+      } catch (err) {
+        jsonDisplay.textContent = '';
+        status.textContent = '❌ Lỗi khi gọi API: ' + err.message;
+        console.error("Lỗi fetchApiData:", err);
+      }
+    }
+
+    function copyJson() {
+      const text = document.getElementById('jsonDisplay').textContent;
+      if (!text) return alert("Không có dữ liệu để sao chép!");
+      navigator.clipboard.writeText(text)
+        .then(() => alert("✅ Đã sao chép JSON vào clipboard!"))
+        .catch(() => alert("❌ Không thể sao chép."));
+    }
+
+    function downloadJson() {
+      const text = document.getElementById('jsonDisplay').textContent;
+      if (!text) return alert("Không có dữ liệu để tải!");
+      const blob = new Blob([text], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = "data.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function clearJson() {
+      document.getElementById('jsonDisplay').textContent = '';
+      document.getElementById('status').textContent = '';
+      document.getElementById('apiInput').value = '';
+    }
+
+    // Auto-load from query string
+    window.onload = function () {
+      const urlApi = new URLSearchParams(window.location.search).get("api");
+      if (urlApi) {
+        document.getElementById("apiInput").value = urlApi;
+        fetchApiData();
+      }
+    }
+  </script>
+</body>
+
+</html>

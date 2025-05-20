@@ -24,7 +24,7 @@ fastify.register(require('./routes/notification.route'), { prefix: process.env.A
 
 
 fastify.get("/", (req, reply) => { return reply.sendFile("index.html") });
-fastify.get("/view/users", (req, reply) => { return reply.sendFile("user.html") });
+fastify.get('/view', (req, reply) => { return reply.sendFile('view.html'); });
 
 (async () => {
     try {
