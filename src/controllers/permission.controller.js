@@ -116,3 +116,50 @@ exports.createPermissionsBulk = async (request, reply) => {
     reply.code(500).send({ status: 'error', message: error.message });
   }
 };
+
+exports.assignPermissionsToRole = async (req, reply) => {
+  try {
+    const { roleId } = req.params;
+    const { permissions } = req.body;
+
+    if (!Array.isArray(permissions)) {
+      return reply.status(400).send({
+        message: "Permissions must be an array of permission names.",
+      });
+    }
+
+    // Tìm các permission tương ứng với tên
+    const foundPermissions = await Permission.find({
+      name: { $in: permissions },
+    });
+
+    if (foundPermissions.length !== permissions.length) {
+      return reply.status(404).send({
+        message: "Some permissions not found.",
+      });
+    }
+
+    // Cập nhật quyền cho vai trò
+    const role = await Role.findByIdAndUpdate(
+      roleId,
+      { permissions: foundPermissions.map((p) => p._id) },
+      { new: true }
+    ).populate("permissions");
+
+    if (!role) {
+      return reply.status(404).send({
+        message: "Role not found.",
+      });
+    }
+
+    reply.send({
+      message: "Permissions updated successfully.",
+      data: role,
+    });
+  } catch (error) {
+    console.error(error);
+    reply.status(500).send({
+      message: "Internal server error.",
+    });
+  }
+};
