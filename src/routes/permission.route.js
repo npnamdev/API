@@ -6,6 +6,7 @@ async function permissionRoutes(fastify) {
     fastify.post('/permissions', permissionController.createPermission);
     fastify.put('/permissions/:id', permissionController.updatePermission);
     fastify.delete('/permissions/:id', permissionController.deletePermission);
+    fastify.post('/permissions/bulk', permissionController.createPermissionsBulk);
 }
 
 module.exports = permissionRoutes;
