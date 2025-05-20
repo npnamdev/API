@@ -43,7 +43,8 @@ exports.getAllRoles = async (request, reply) => {
         const roles = await Role.find(searchQuery)
             .skip(skip)
             .limit(pageSize)
-            .sort({ createdAt: sortOrder });
+            .sort({ createdAt: sortOrder })
+            .populate('permissions', 'name');
 
         const totalRoles = await Role.countDocuments(searchQuery);
         const totalPages = Math.ceil(totalRoles / pageSize);
@@ -70,7 +71,7 @@ exports.getAllRoles = async (request, reply) => {
 exports.getRoleById = async (request, reply) => {
     const { id } = request.params;
     try {
-        const role = await Role.findById(id).lean();
+        const role = await Role.findById(id).lean().populate('permissions', 'name');
         if (!role) {
             return reply.code(404).send({
                 status: 'error',
