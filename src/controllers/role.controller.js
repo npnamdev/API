@@ -161,9 +161,6 @@ exports.deleteRoleById = async (request, reply) => {
     }
 };
 
-
-
-// Gán quyền cho role
 exports.assignPermissionsToRole = async (request, reply) => {
     const { roleId } = request.params;
     const { permissionIds } = request.body;

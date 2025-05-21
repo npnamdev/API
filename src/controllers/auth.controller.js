@@ -4,6 +4,7 @@ const User = require('../models/user.model');
 const Role = require('../models/role.model');
 const sendEmail = require('../utils/mailer');
 const Notification = require('../models/notification.model');
+const verifyEmailTemplate = require('../templates/verifyEmailTemplate');
 
 exports.login = async (request, reply) => {
     try {
@@ -19,28 +20,32 @@ exports.login = async (request, reply) => {
             return reply.code(400).send({ message: 'Invalid credentials' });
         }
 
-        const ipAddress = request.ip;
+        if (user.role && user.role.name.toLowerCase() === 'admin') {
+            const ipAddress = request.ip;
+            const userAgent = request.headers['user-agent'] || 'Unknown device';
+            const UAParser = require('ua-parser-js');
+            const parser = new UAParser();
+            parser.setUA(userAgent);
+            const uaResult = parser.getResult();
 
-        const notification = new Notification({
-            message: `
-    <span class="text-sm text-gray-800">
-      <span class="text-yellow-600 font-medium">Phát hiện đăng nhập từ thiết bị lạ</span> 
-      từ IP <strong class="text-blue-600">${ipAddress}</strong>. 
-      Nếu không phải bạn, hãy 
-      <span class="text-red-600">đổi mật khẩu ngay</> 
-      để đảm bảo an toàn.
-    </span>
-  `,
-            type: 'warning',
-            status: 'unread',
-        });
+            const loginTime = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
 
-        await notification.save();
-        request.server.io.emit('notify', notification);
+            const notification = `
+                <span class="text-sm text-gray-800">
+                    <span class="text-yellow-600 font-medium">Phát hiện đăng nhập từ thiết bị lạ</span> 
+                    từ IP <strong class="text-blue-600">${ipAddress}</strong> vào lúc <strong>${loginTime}</strong>.<br/>
+                    Thiết bị: <strong>${uaResult.device.vendor || 'Unknown'} ${uaResult.device.model || ''} (${uaResult.device.type || 'Unknown'})</strong>.<br/>
+                    Trình duyệt: <strong>${uaResult.browser.name} ${uaResult.browser.version}</strong>.<br/>
+                    Hệ điều hành: <strong>${uaResult.os.name} ${uaResult.os.version}</strong>.<br/>
+                    Nếu không phải bạn, hãy <span class="text-red-600">đổi mật khẩu ngay</span> để đảm bảo an toàn.
+                </span>
+            `;
 
-        // const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '15m' });
-        // const refreshToken = await reply.jwtSign({ id: user._id }, { expiresIn: '7d' });
-        const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '5m' });
+            await notification.save();
+            request.server.io.emit('notify', notification);
+        }
+
+        const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '15m' });
         const refreshToken = await reply.jwtSign({ id: user._id }, { expiresIn: '1d' });
 
         reply.setCookie('refreshToken', refreshToken, {
@@ -52,11 +57,7 @@ exports.login = async (request, reply) => {
             maxAge: 7 * 24 * 60 * 60
         });
 
-        return reply.send({
-            message: 'Login successful',
-            accessToken,
-            user
-        });
+        return reply.send({ message: 'Login successful', accessToken, user });
     } catch (err) {
         return reply.code(500).send({ message: 'Internal server error' });
     }
@@ -85,9 +86,7 @@ exports.refreshToken = async (request, reply) => {
 
     try {
         const payload = await request.jwtVerify(refreshToken);
-
         const accessToken = await reply.jwtSign({ id: payload.id }, { expiresIn: '5m' });
-
         return reply.send({ accessToken });
     } catch (err) {
         console.error("Refresh token invalid or expired:", err.message);
@@ -108,7 +107,7 @@ exports.register = async (request, reply) => {
         }
 
         const verificationToken = crypto.randomBytes(32).toString('hex');
-        const tokenExpires = Date.now() + 5 * 60 * 1000; // 5 phút
+        const tokenExpires = Date.now() + 5 * 60 * 1000;
 
         const userRole = await Role.findOne({ name: 'user' });
         if (!userRole) {
@@ -131,21 +130,18 @@ exports.register = async (request, reply) => {
         await sendEmail({
             to: email,
             subject: 'Xác minh email của bạn',
-            html: `<p>Xin chào <strong>${username}</strong>,</p>
-                   <p>Vui lòng xác minh email trong vòng 5 phút bằng cách nhấn vào liên kết bên dưới:</p>
-                   <p><a href="${verifyUrl}">Xác minh email</a></p>
-                   <p>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.</p>`,
+            html: verifyEmailTemplate(username, verifyUrl),
         });
 
         const notification = new Notification({
             message: `
-    <span class="text-sm text-gray-800">
-      Một người dùng mới đã đăng ký tài khoản: 
-      <strong class="text-blue-600 font-medium">${username}</strong> 
-      (<span class="text-green-600">${email}</span>). 
-      <span class="text-red-500 font-medium">Vui lòng kiểm tra và xác minh thông tin.</span>
-    </span>
-  `,
+                <span class="text-sm text-gray-800">
+                Một người dùng mới đã đăng ký tài khoản: 
+                <strong class="text-blue-600 font-medium">${username}</strong> 
+                (<span class="text-green-600">${email}</span>). 
+                <span class="text-red-500 font-medium">Vui lòng kiểm tra và xác minh thông tin.</span>
+                </span>
+            `,
             type: 'info',
             status: 'unread',
         });
