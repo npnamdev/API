@@ -5,8 +5,11 @@ const Role = require('../models/role.model');
 const sendEmail = require('../utils/mailer');
 const Notification = require('../models/notification.model');
 const verifyEmailTemplate = require('../templates/verifyEmailTemplate');
+const UAParser = require('ua-parser-js');
+
 
 exports.login = async (request, reply) => {
+
     try {
         const { email, password } = request.body;
         if (!email || !password) {
@@ -23,12 +26,20 @@ exports.login = async (request, reply) => {
         if (user.role && user.role.name.toLowerCase() === 'admin') {
             const ipAddress = request.ip;
             const userAgent = request.headers['user-agent'] || 'Unknown device';
-            const UAParser = require('ua-parser-js');
             const parser = new UAParser();
             parser.setUA(userAgent);
             const uaResult = parser.getResult();
-
             const loginTime = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+
+            // Log tất cả thông tin
+            console.log('===== LOGIN INFORMATION =====');
+            console.log('IP Address:       ', ipAddress);
+            console.log('User Agent:       ', userAgent);
+            console.log('Device Type:      ', uaResult.device.type || 'Unknown');
+            console.log('Operating System: ', `${uaResult.os.name} ${uaResult.os.version}`);
+            console.log('Browser:          ', `${uaResult.browser.name} ${uaResult.browser.version}`);
+            console.log('Login Time:       ', loginTime);
+            console.log('==============================');
 
             const notification = new Notification({
                 message: `
