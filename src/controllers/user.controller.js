@@ -1,5 +1,6 @@
 const User = require('../models/user.model');
 
+
 exports.createUser = async (request, reply) => {
     try {
         const body = { ...request.body };
@@ -23,7 +24,6 @@ exports.createUser = async (request, reply) => {
         reply.internalServerError(error.message || 'Internal Server Error');
     }
 };
-
 
 exports.getAllUsers = async (request, reply) => {
     try {
@@ -74,7 +74,6 @@ exports.getAllUsers = async (request, reply) => {
     }
 };
 
-
 exports.getUserById = async (request, reply) => {
     try {
         const user = await User.findById(request.params.id).select('-password').populate({ path: 'role', select: 'name' });
@@ -97,36 +96,25 @@ exports.getUserById = async (request, reply) => {
 exports.updateUserById = async (request, reply) => {
     try {
         const updateData = request.body;
-
-        // Nếu email là root@doman.com thì chặn lại
-        if (updateData.email === "root@doman.com") {
-            return reply.code(403).send({
-                status: 'error',
-                message: 'Email address "root@doman.com" is not allowed.',
-            });
-        }
-
-        const user = await User.findByIdAndUpdate(
-            request.params.id,
-            updateData,
-            { new: true }
-        );
+        const user = await User.findById(request.params.id);
 
         if (!user) {
-            return reply.code(404).send({
+            return reply.code(404).send({ status: 'error', message: 'User not found' });
+        }
+
+        if (user.email === process.env.ADMIN_EMAIL) {
+            return reply.code(403).send({
                 status: 'error',
-                message: 'User not found',
+                message: `The user with email "${process.env.ADMIN_EMAIL}" cannot be modified.`,
             });
         }
 
-        const userObject = user.toObject();
+        const updatedUser = await User.findByIdAndUpdate(request.params.id, updateData, { new: true });
+
+        const userObject = updatedUser.toObject();
         const { password: _, ...userWithoutPassword } = userObject;
 
-        reply.send({
-            status: 'success',
-            message: 'User updated successfully',
-            data: userWithoutPassword,
-        });
+        reply.send({ status: 'success', message: 'User updated successfully', data: userWithoutPassword });
     } catch (error) {
         reply.internalServerError(error.message || 'Internal Server Error');
     }
@@ -136,25 +124,18 @@ exports.deleteUserById = async (request, reply) => {
     try {
         const user = await User.findById(request.params.id);
         if (!user) {
-            return reply.code(404).send({
-                status: 'error',
-                message: 'User not found',
-            });
+            return reply.code(404).send({ status: 'error', message: 'User not found' });
         }
 
-        if (user.email === "root@doman.com") {
+        if (user.email === process.env.ADMIN_EMAIL) {
             return reply.code(403).send({
                 status: 'error',
-                message: 'The user with email "root@doman.com" cannot be deleted.',
+                message: `The user with email "${process.env.ADMIN_EMAIL}" cannot be deleted.`,
             });
         }
 
         await User.findByIdAndDelete(request.params.id);
-
-        reply.send({
-            status: 'success',
-            message: 'User deleted successfully',
-        });
+        reply.send({ status: 'success', message: 'User deleted successfully' });
     } catch (error) {
         reply.internalServerError(error.message || 'Internal Server Error');
     }

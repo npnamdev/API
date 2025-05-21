@@ -2,6 +2,7 @@ require('dotenv').config();
 require('./config/cloudinary.config')();
 const corsOptions = require('./config/cors');
 const fastify = require('fastify')({ logger: false });
+const initializeData = require('./utils/initialSetup');
 
 fastify.register(require('@fastify/cors'), corsOptions);
 fastify.register(require("fastify-socket.io"), { cors: corsOptions });
@@ -29,6 +30,8 @@ fastify.get('/view', (req, reply) => { return reply.sendFile('view.html'); });
 (async () => {
     try {
         await fastify.listen({ port: process.env.PORT || 8000, host: '0.0.0.0' });
+        await initializeData();
+
         console.log(`\n- 🌟 App running at:`);
         console.log(`- 🚀 Server listening on\x1b[0m \x1b[33mhttp://localhost:${process.env.PORT || 8000}\x1b[0m`);
 
