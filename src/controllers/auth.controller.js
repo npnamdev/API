@@ -31,16 +31,6 @@ exports.login = async (request, reply) => {
             const uaResult = parser.getResult();
             const loginTime = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
 
-            // Log tất cả thông tin
-            console.log('===== LOGIN INFORMATION =====');
-            console.log('IP Address:       ', ipAddress);
-            console.log('User Agent:       ', userAgent);
-            console.log('Device Type:      ', uaResult.device.type || 'Unknown');
-            console.log('Operating System: ', `${uaResult.os.name} ${uaResult.os.version}`);
-            console.log('Browser:          ', `${uaResult.browser.name} ${uaResult.browser.version}`);
-            console.log('Login Time:       ', loginTime);
-            console.log('==============================');
-
             const notification = new Notification({
                 message: `
                     <span class="text-sm text-gray-800">

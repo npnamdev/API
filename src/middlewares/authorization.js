@@ -24,11 +24,14 @@ function checkPermission(permissionName) {
       if (!permissions.includes(permissionName)) {
         return reply.code(403).send({ status: 'error', message: 'Forbidden: You do not have permission' });
       }
+
+      return;
     } catch (error) {
       console.error(error);
       return reply.code(500).send({ status: 'error', message: 'Internal server error' });
     }
   };
 }
+
 
 module.exports = { checkPermission };
