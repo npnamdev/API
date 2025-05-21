@@ -30,8 +30,9 @@ exports.login = async (request, reply) => {
 
             const loginTime = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
 
-            const notification = `
-                <span class="text-sm text-gray-800">
+            const notification = new Notification({
+                message: `
+                    <span class="text-sm text-gray-800">
                     <span class="text-yellow-600 font-medium">Phát hiện đăng nhập từ thiết bị lạ</span> 
                     từ IP <strong class="text-blue-600">${ipAddress}</strong> vào lúc <strong>${loginTime}</strong>.<br/>
                     Thiết bị: <strong>${uaResult.device.vendor || 'Unknown'} ${uaResult.device.model || ''} (${uaResult.device.type || 'Unknown'})</strong>.<br/>
@@ -39,7 +40,10 @@ exports.login = async (request, reply) => {
                     Hệ điều hành: <strong>${uaResult.os.name} ${uaResult.os.version}</strong>.<br/>
                     Nếu không phải bạn, hãy <span class="text-red-600">đổi mật khẩu ngay</span> để đảm bảo an toàn.
                 </span>
-            `;
+                `,
+                type: 'warning',
+                status: 'unread',
+            });
 
             await notification.save();
             request.server.io.emit('notify', notification);
