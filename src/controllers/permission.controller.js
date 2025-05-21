@@ -16,7 +16,7 @@ exports.createPermission = async (request, reply) => {
 
 exports.getPermissions = async (request, reply) => {
     try {
-        const { page = 1, limit = 10, search = '', sort = 'asc' } = request.query;
+        const { page = 1, limit = 100, search = '', sort = 'asc' } = request.query;
         const pageNumber = Math.max(1, parseInt(page));
         const pageSize = Math.max(1, parseInt(limit));
         const skip = (pageNumber - 1) * pageSize;
