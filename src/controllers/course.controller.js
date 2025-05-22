@@ -1,13 +1,46 @@
 const Course = require('../models/course.model');
 
-exports.getAllCourses = async (req, reply) => {
+exports.getAllCourses = async (request, reply) => {
     try {
-        const courses = await Course.find().populate('instructor').populate('category');
-        reply.send(courses);
+        const { page = 1, limit = 10, search = '', sort = 'desc' } = request.query;
+        const pageNumber = Math.max(1, parseInt(page));
+        const pageSize = Math.max(1, parseInt(limit));
+        const skip = (pageNumber - 1) * pageSize;
+
+        const searchQuery = search
+            ? { title: { $regex: search, $options: 'i' } }
+            : {};
+
+        const sortOrder = sort === 'asc' ? 1 : -1;
+        const courses = await Course.find(searchQuery)
+            .skip(skip)
+            .limit(pageSize)
+            .sort({ createdAt: sortOrder })
+            .populate('instructor')
+            .populate('category');
+
+        const totalCourses = await Course.countDocuments(searchQuery);
+        const totalPages = Math.ceil(totalCourses / pageSize);
+
+        reply.send({
+            status: 'success',
+            message: 'Courses retrieved successfully',
+            data: courses,
+            pagination: {
+                currentPage: pageNumber,
+                totalPages,
+                totalCourses,
+                limit: pageSize,
+            },
+        });
     } catch (error) {
-        reply.code(500).send({ error: 'Server error' });
+        reply.code(500).send({
+            status: 'error',
+            message: error.message || 'Server error',
+        });
     }
 };
+
 
 // Tạo khóa học mới
 exports.createCourse = async (req, reply) => {
