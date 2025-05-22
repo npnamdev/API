@@ -51,7 +51,7 @@ exports.login = async (request, reply) => {
         }
 
         const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '1m' });
-        const refreshToken = await reply.jwtSign({ id: user._id }, { expiresIn: '5m' });
+        const refreshToken = await reply.jwtSign({ id: user._id }, { expiresIn: '2m' });
 
         reply.setCookie('refreshToken', refreshToken, {
             httpOnly: true,
