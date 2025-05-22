@@ -50,8 +50,19 @@ exports.login = async (request, reply) => {
             request.server.io.emit('notify', notification);
         }
 
-        const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '1m' });
-        const refreshToken = await reply.jwtSign({ id: user._id }, { expiresIn: '2m' });
+        // const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '1m' });
+        // const refreshToken = await reply.jwtSign({ id: user._id }, { expiresIn: '2m' });
+
+        const accessToken = await reply.jwtSign(
+            { id: user._id },
+            { expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || '15m' }
+        );
+
+        const refreshToken = await reply.jwtSign(
+            { id: user._id },
+            { expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '7d' }
+        );
+
 
         reply.setCookie('refreshToken', refreshToken, {
             httpOnly: true,
@@ -91,7 +102,11 @@ exports.refreshToken = async (request, reply) => {
 
     try {
         const payload = await request.jwtVerify(refreshToken);
-        const accessToken = await reply.jwtSign({ id: payload.id }, { expiresIn: '1m' });
+        // const accessToken = await reply.jwtSign({ id: payload.id }, { expiresIn: '1m' });
+        const accessToken = await reply.jwtSign(
+            { id: payload.id },
+            { expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || '15m' }
+        );
         return reply.send({ accessToken });
     } catch (err) {
         console.error("Refresh token invalid or expired:", err.message);
