@@ -91,11 +91,11 @@ exports.refreshToken = async (request, reply) => {
 
     try {
         const payload = await request.jwtVerify(refreshToken);
-        const accessToken = await reply.jwtSign({ id: payload.id }, { expiresIn: '5m' });
+        const accessToken = await reply.jwtSign({ id: payload.id }, { expiresIn: '1m' });
         return reply.send({ accessToken });
     } catch (err) {
         console.error("Refresh token invalid or expired:", err.message);
-        return reply.status(401).send({
+        return reply.status(403).send({
             error: 'Invalid or expired refresh token',
             code: err.message === 'jwt expired' ? 'REFRESH_TOKEN_EXPIRED' : 'REFRESH_TOKEN_INVALID'
         });
