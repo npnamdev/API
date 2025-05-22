@@ -50,8 +50,8 @@ exports.login = async (request, reply) => {
             request.server.io.emit('notify', notification);
         }
 
-        const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '15m' });
-        const refreshToken = await reply.jwtSign({ id: user._id }, { expiresIn: '1d' });
+        const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '1m' });
+        const refreshToken = await reply.jwtSign({ id: user._id }, { expiresIn: '5m' });
 
         reply.setCookie('refreshToken', refreshToken, {
             httpOnly: true,
