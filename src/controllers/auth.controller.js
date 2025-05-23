@@ -23,6 +23,10 @@ exports.login = async (request, reply) => {
             return reply.code(400).send({ message: 'Invalid credentials' });
         }
 
+        if (!user.isVerified) {
+            return reply.code(403).send({ message: 'Please verify your email before logging in.' });
+        }
+
         if (user.role && user.role.name.toLowerCase() === 'admin') {
             const ipAddress = request.ip;
             const userAgent = request.headers['user-agent'] || 'Unknown device';
@@ -50,8 +54,6 @@ exports.login = async (request, reply) => {
             request.server.io.emit('notify', notification);
         }
 
-        // const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: '1m' });
-        // const refreshToken = await reply.jwtSign({ id: user._id }, { expiresIn: '2m' });
 
         const accessToken = await reply.jwtSign(
             { id: user._id },
@@ -102,7 +104,6 @@ exports.refreshToken = async (request, reply) => {
 
     try {
         const payload = await request.jwtVerify(refreshToken);
-        // const accessToken = await reply.jwtSign({ id: payload.id }, { expiresIn: '1m' });
         const accessToken = await reply.jwtSign(
             { id: payload.id },
             { expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || '15m' }
