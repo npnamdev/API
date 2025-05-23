@@ -10,6 +10,6 @@ const lessonSchema = new mongoose.Schema({
   order: Number,
   isPreview: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model('Lesson', lessonSchema);

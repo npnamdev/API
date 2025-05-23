@@ -24,6 +24,7 @@ fastify.register(require('./routes/media.route'), { prefix: process.env.API_PREF
 fastify.register(require('./routes/notification.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/course.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/lesson.route'), { prefix: process.env.API_PREFIX || '/api' });
+fastify.register(require('./routes/category.route'), { prefix: process.env.API_PREFIX || '/api' });
 
 
 fastify.get("/", (req, reply) => { return reply.sendFile("index.html") });

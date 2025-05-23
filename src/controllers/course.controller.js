@@ -42,7 +42,6 @@ exports.getAllCourses = async (request, reply) => {
 };
 
 
-
 exports.createCourse = async (req, reply) => {
     try {
         const newCourse = new Course(req.body);
