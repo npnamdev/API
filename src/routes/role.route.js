@@ -8,7 +8,7 @@ async function roleRoutes(fastify) {
     fastify.get('/roles/:id/permissions', { preHandler: [fastify.authenticate, checkPermission('READ_ROLE')] }, roleController.getPermissionsOfRole);
     fastify.put('/roles/:id', { preHandler: [fastify.authenticate, checkPermission('UPDATE_ROLE')] }, roleController.updateRoleById);
     fastify.delete('/roles/:id', { preHandler: [fastify.authenticate, checkPermission('DELETE_ROLE')] }, roleController.deleteRoleById);
-    fastify.put('/roles/:roleId/permissions', { preHandler: [fastify.authenticate, checkPermission('ASSIGN_PERMISSION')] }, roleController.assignPermissionsToRole);
+    fastify.put('/roles/:roleId/permissions', { preHandler: [fastify.authenticate, checkPermission('ASSIGN_PERMISSIONS_TO_ROLE')] }, roleController.assignPermissionsToRole);
 }
 
 module.exports = roleRoutes;
