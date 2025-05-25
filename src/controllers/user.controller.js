@@ -33,14 +33,31 @@ exports.getAllUsers = async (request, reply) => {
         const sortOrder = request.query.sort === 'asc' ? 1 : -1;
         const search = request.query.search || '';
         const searchFields = request.query.searchFields || '';
+        const timeRange = request.query.timeRange || '';
+
         const skip = (page - 1) * limit;
-        const excludeFields = ['page', 'limit', 'sort', 'sortBy', 'search', 'searchFields'];
+
+        const excludeFields = [
+            'page',
+            'limit',
+            'sort',
+            'sortBy',
+            'search',
+            'searchFields',
+            'timeRange',
+        ];
+
+        // Khởi tạo điều kiện lọc
         const filterConditions = [];
+
+        // Lọc theo các trường còn lại
         for (const key in request.query) {
             if (!excludeFields.includes(key)) {
                 filterConditions.push({ [key]: request.query[key] });
             }
         }
+
+        // Lọc theo searchFields
         if (search && searchFields) {
             const fields = searchFields.split(',');
             const searchConditions = fields.map(field => ({
@@ -48,7 +65,38 @@ exports.getAllUsers = async (request, reply) => {
             }));
             filterConditions.push({ $or: searchConditions });
         }
+
+        // Lọc theo thời gian (timeRange) - linh hoạt
+        if (timeRange) {
+            const match = timeRange.match(/^(\d+)([dwm y])$/); // ví dụ: 3d, 1w, 2m, 1y
+            if (match) {
+                const value = parseInt(match[1]);
+                const unit = match[2];
+                const now = new Date();
+                let fromDate = new Date(now);
+
+                switch (unit) {
+                    case 'd':
+                        fromDate.setDate(now.getDate() - value);
+                        break;
+                    case 'w':
+                        fromDate.setDate(now.getDate() - value * 7);
+                        break;
+                    case 'm':
+                        fromDate.setMonth(now.getMonth() - value);
+                        break;
+                    case 'y':
+                        fromDate.setFullYear(now.getFullYear() - value);
+                        break;
+                }
+
+                filterConditions.push({ createdAt: { $gte: fromDate } });
+            }
+        }
+
         const finalFilter = filterConditions.length > 0 ? { $and: filterConditions } : {};
+
+        // Truy vấn database
         const totalUsers = await User.countDocuments(finalFilter);
         const users = await User.find(finalFilter)
             .select('-password')
@@ -57,6 +105,7 @@ exports.getAllUsers = async (request, reply) => {
             .sort({ [sortBy]: sortOrder })
             .populate({ path: 'role', select: 'name' });
 
+        // Trả kết quả
         return reply.send({
             success: true,
             data: users,
@@ -73,6 +122,7 @@ exports.getAllUsers = async (request, reply) => {
         return reply.status(500).send({ success: false, message: 'Server Error' });
     }
 };
+
 
 exports.getUserById = async (request, reply) => {
     try {
