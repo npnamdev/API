@@ -42,7 +42,6 @@ exports.getAllCourses = async (request, reply) => {
 };
 
 
-// Tạo khóa học mới
 exports.createCourse = async (req, reply) => {
     try {
         const newCourse = new Course(req.body);
@@ -52,6 +51,22 @@ exports.createCourse = async (req, reply) => {
         reply.code(400).send({ error: error.message });
     }
 };
+
+exports.createManyCourses = async (req, reply) => {
+    try {
+        const courses = req.body;
+
+        if (!Array.isArray(courses) || courses.length === 0) {
+            return reply.code(400).send({ error: 'Request body must be a non-empty array of courses' });
+        }
+
+        const createdCourses = await Course.insertMany(courses);
+        reply.code(201).send(createdCourses);
+    } catch (error) {
+        reply.code(400).send({ error: error.message });
+    }
+};
+
 
 // Lấy 1 khóa học theo ID
 exports.getCourseById = async (req, reply) => {

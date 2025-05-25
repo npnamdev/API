@@ -22,7 +22,7 @@ const courseSchema = new mongoose.Schema({
         text: { type: String, default: '' },
         color: { type: String, default: '' }
     }
-});
+}, { timestamps: true });
 
 const Course = mongoose.model('Course', courseSchema);
 
