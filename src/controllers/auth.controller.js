@@ -9,7 +9,6 @@ const UAParser = require('ua-parser-js');
 
 
 exports.login = async (request, reply) => {
-
     try {
         const { email, password } = request.body;
         if (!email || !password) {
@@ -37,7 +36,7 @@ exports.login = async (request, reply) => {
 
             const notification = new Notification({
                 message: `
-                    <span class="text-sm text-gray-800">
+                <span class="text-gray-800">
                     <span class="text-yellow-600 font-medium">Phát hiện đăng nhập từ thiết bị lạ</span> 
                     từ IP <strong class="text-blue-600">${ipAddress}</strong> vào lúc <strong>${loginTime}</strong>.<br/>
                     Thiết bị: <strong>${uaResult.device.vendor || 'Unknown'} ${uaResult.device.model || ''} (${uaResult.device.type || 'Unknown'})</strong>.<br/>

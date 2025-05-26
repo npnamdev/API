@@ -123,7 +123,6 @@ exports.getAllUsers = async (request, reply) => {
     }
 };
 
-
 exports.getUserById = async (request, reply) => {
     try {
         const user = await User.findById(request.params.id).select('-password').populate({ path: 'role', select: 'name' });
