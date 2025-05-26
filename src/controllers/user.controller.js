@@ -103,7 +103,7 @@ exports.getAllUsers = async (request, reply) => {
             .skip(skip)
             .limit(limit)
             .sort({ [sortBy]: sortOrder })
-            .populate({ path: 'role', select: 'name' });
+            .populate({ path: 'role', select: 'label' });
 
         // Trả kết quả
         return reply.send({
@@ -125,7 +125,7 @@ exports.getAllUsers = async (request, reply) => {
 
 exports.getUserById = async (request, reply) => {
     try {
-        const user = await User.findById(request.params.id).select('-password').populate({ path: 'role', select: 'name' });
+        const user = await User.findById(request.params.id).select('-password').populate({ path: 'role', select: 'label' });
 
         if (!user) {
             return reply.code(404).send({ status: 'error', message: 'User not found' });
