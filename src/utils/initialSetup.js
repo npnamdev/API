@@ -5,16 +5,31 @@ const Permission = require('../models/permission.model');
 async function initializeData() {
     try {
         const permissionsData = [
-            { name: 'CREATE_USER', label: 'Create User', group: 'User', description: 'Allows creating a new user', order: 1 },
-            { name: 'READ_USER', label: 'Read User', group: 'User', description: 'Allows reading user data', order: 2 },
-            { name: 'UPDATE_USER', label: 'Update User', group: 'User', description: 'Allows updating user information', order: 3 },
-            { name: 'DELETE_USER', label: 'Delete User', group: 'User', description: 'Allows deleting a user', order: 4 },
-            { name: 'CREATE_ROLE', label: 'Create Role', group: 'Role', description: 'Allows creating a new role', order: 1 },
-            { name: 'READ_ROLE', label: 'Read Role', group: 'Role', description: 'Allows viewing role details', order: 2 },
-            { name: 'UPDATE_ROLE', label: 'Update Role', group: 'Role', description: 'Allows editing role information', order: 3 },
-            { name: 'DELETE_ROLE', label: 'Delete Role', group: 'Role', description: 'Allows deleting roles', order: 4 },
-            { name: 'ASSIGN_PERMISSIONS_TO_ROLE', label: 'Assign Permissions to Role', group: 'Role', description: 'Allows assigning permissions to a role', order: 5 }
+            // User permissions
+            { name: 'CREATE_USER', label: 'Tạo người dùng', group: 'User', description: 'Cho phép tạo người dùng mới', order: 1 },
+            { name: 'READ_USER', label: 'Xem người dùng', group: 'User', description: 'Cho phép xem dữ liệu người dùng', order: 2 },
+            { name: 'UPDATE_USER', label: 'Cập nhật người dùng', group: 'User', description: 'Cho phép cập nhật thông tin người dùng', order: 3 },
+            { name: 'DELETE_USER', label: 'Xoá người dùng', group: 'User', description: 'Cho phép xoá người dùng', order: 4 },
+
+            // Role permissions
+            { name: 'CREATE_ROLE', label: 'Tạo vai trò', group: 'Role', description: 'Cho phép tạo vai trò mới', order: 1 },
+            { name: 'READ_ROLE', label: 'Xem vai trò', group: 'Role', description: 'Cho phép xem chi tiết vai trò', order: 2 },
+            { name: 'UPDATE_ROLE', label: 'Cập nhật vai trò', group: 'Role', description: 'Cho phép chỉnh sửa thông tin vai trò', order: 3 },
+            { name: 'DELETE_ROLE', label: 'Xoá vai trò', group: 'Role', description: 'Cho phép xoá vai trò', order: 4 },
+            { name: 'ASSIGN_PERMISSIONS_TO_ROLE', label: 'Gán quyền cho vai trò', group: 'Role', description: 'Cho phép gán quyền cho một vai trò', order: 5 },
+
+            // Course permissions
+            { name: 'CREATE_COURSE', label: 'Tạo khóa học', group: 'Course', description: 'Cho phép tạo khóa học mới', order: 1 },
+            { name: 'READ_COURSE', label: 'Xem khóa học', group: 'Course', description: 'Cho phép xem danh sách và chi tiết khóa học', order: 2 },
+            { name: 'UPDATE_COURSE', label: 'Cập nhật khóa học', group: 'Course', description: 'Cho phép chỉnh sửa thông tin khóa học', order: 3 },
+            { name: 'DELETE_COURSE', label: 'Xoá khóa học', group: 'Course', description: 'Cho phép xoá khóa học', order: 4 },
+
+            // Image permissions
+            { name: 'UPLOAD_IMAGE', label: 'Tải ảnh lên', group: 'Image', description: 'Cho phép tải hình ảnh lên hệ thống', order: 1 },
+            { name: 'READ_IMAGE', label: 'Xem ảnh', group: 'Image', description: 'Cho phép xem danh sách hình ảnh', order: 2 },
+            { name: 'DELETE_IMAGE', label: 'Xoá ảnh', group: 'Image', description: 'Cho phép xoá hình ảnh khỏi hệ thống', order: 3 }
         ];
+
 
         for (const perm of permissionsData) {
             const exists = await Permission.findOne({ name: perm.name });
@@ -30,6 +45,7 @@ async function initializeData() {
             adminRole = new Role({
                 name: 'admin',
                 label: 'Quản trị viên',
+                isSystemRole: true,
                 permissions: allPermissions.map(p => p._id),
             });
             await adminRole.save();
@@ -38,7 +54,7 @@ async function initializeData() {
 
         let userRole = await Role.findOne({ name: 'user' });
         if (!userRole) {
-            userRole = new Role({ name: 'user', label: 'Người dùng', permissions: [] });
+            userRole = new Role({ name: 'user', label: 'Người dùng', isSystemRole: true, permissions: [] });
             await userRole.save();
             console.log('✅ User role created with no permissions');
         }

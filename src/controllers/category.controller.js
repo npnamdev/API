@@ -12,12 +12,45 @@ exports.createCategory = async (req, reply) => {
 
 exports.getAllCategories = async (req, reply) => {
   try {
-    const categories = await Category.find();
-    reply.send(categories);
+    const { page = 1, limit = 10, search = '', sort = 'desc' } = req.query;
+
+    const pageNumber = Math.max(1, parseInt(page));
+    const pageSize = Math.max(1, parseInt(limit));
+    const skip = (pageNumber - 1) * pageSize;
+
+    const searchQuery = search
+      ? { name: { $regex: search, $options: 'i' } } // assuming "name" is the field to search
+      : {};
+
+    const sortOrder = sort === 'asc' ? 1 : -1;
+
+    const categories = await Category.find(searchQuery)
+      .skip(skip)
+      .limit(pageSize)
+      .sort({ createdAt: sortOrder });
+
+    const totalCategories = await Category.countDocuments(searchQuery);
+    const totalPages = Math.ceil(totalCategories / pageSize);
+
+    reply.send({
+      status: 'success',
+      message: 'Categories retrieved successfully',
+      data: categories,
+      pagination: {
+        currentPage: pageNumber,
+        totalPages,
+        totalCategories,
+        limit: pageSize,
+      },
+    });
   } catch (err) {
-    reply.code(500).send({ error: err.message });
+    reply.code(500).send({
+      status: 'error',
+      message: err.message || 'Server error',
+    });
   }
 };
+
 
 exports.getCategoryById = async (req, reply) => {
   try {
