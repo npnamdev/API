@@ -62,7 +62,7 @@ exports.deleteChapter = async (req, reply) => {
 
 exports.updateChapterOrder = async (req, reply) => {
     try {
-        const { orders } = req.body; // [{ _id: 'id1', order: 0 }, { _id: 'id2', order: 1 }, ...]
+        const { orders } = req.body; 
 
         const bulkOps = orders.map(item => ({
             updateOne: {

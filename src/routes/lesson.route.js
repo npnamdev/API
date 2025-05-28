@@ -6,6 +6,7 @@ async function lessonRoutes(fastify, options) {
     fastify.post('/lessons', lessonController.createLesson);
     fastify.put('/lessons/:id', lessonController.updateLesson);
     fastify.delete('/lessons/:id', lessonController.deleteLesson);
+    fastify.put('/lessons/reorder', chapterController.updateLessonOrder);
 }
 
 module.exports = lessonRoutes;

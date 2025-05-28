@@ -56,3 +56,23 @@ exports.deleteLesson = async (req, reply) => {
         reply.code(500).send({ error: 'Server error' });
     }
 };
+
+
+// PUT /api/lessons/reorder
+exports.updateLessonOrder = async (req, reply) => {
+  try {
+    const { orders } = req.body; // [{ _id: 'lessonId1', order: 0 }, ...]
+
+    const bulkOps = orders.map(item => ({
+      updateOne: {
+        filter: { _id: item._id },
+        update: { order: item.order }
+      }
+    }));
+
+    await Lesson.bulkWrite(bulkOps);
+    reply.send({ message: 'Lesson order updated successfully' });
+  } catch (error) {
+    reply.code(500).send({ error: 'Failed to update lesson order' });
+  }
+}
