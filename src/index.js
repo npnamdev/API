@@ -25,6 +25,7 @@ fastify.register(require('./routes/notification.route'), { prefix: process.env.A
 fastify.register(require('./routes/course.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/lesson.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/category.route'), { prefix: process.env.API_PREFIX || '/api' });
+fastify.register(require('./routes/chapter.route'), { prefix: process.env.API_PREFIX || '/api' });
 
 fastify.get('/ping', async (request, reply) => { reply.code(200).send('pong')});
 fastify.get("/", (req, reply) => { return reply.sendFile("index.html") });

@@ -10,8 +10,7 @@ const courseSchema = new mongoose.Schema({
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
     level: { type: String, enum: ['beginner', 'intermediate', 'advanced'], default: 'beginner' },
     language: { type: String, default: 'English' },
-    instructor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    lessons: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Lesson' }],
+    instructors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }],
     tags: [String],
     studentsEnrolled: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     isPublished: { type: Boolean, default: false },
@@ -21,7 +20,8 @@ const courseSchema = new mongoose.Schema({
         type: { type: String, enum: ['none', 'popular', 'best_seller', 'new', 'discount', 'hot', 'recommended'], default: 'none' },
         text: { type: String, default: '' },
         color: { type: String, default: '' }
-    }
+    },
+    chapters: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' }],
 }, { timestamps: true });
 
 const Course = mongoose.model('Course', courseSchema);
