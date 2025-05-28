@@ -3,7 +3,7 @@ const Lesson = require('../models/lesson.model');
 // Lấy danh sách tất cả bài học
 exports.getAllLessons = async (req, reply) => {
     try {
-        const lessons = await Lesson.find().populate('course');
+        const lessons = await Lesson.find();
         reply.send(lessons);
     } catch (error) {
         reply.code(500).send({ error: 'Server error' });
