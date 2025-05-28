@@ -62,7 +62,7 @@ exports.deleteChapter = async (req, reply) => {
 
 exports.updateChapterOrder = async (req, reply) => {
     try {
-        const { orders } = req.body; 
+        const { orders } = req.body;
 
         const bulkOps = orders.map(item => ({
             updateOne: {
@@ -80,27 +80,27 @@ exports.updateChapterOrder = async (req, reply) => {
 
 
 exports.createLessonForChapter = async (req, reply) => {
-  try {
-    const { chapterId, title, slug, content, videoUrl, duration, order, isPreview } = req.body;
-    const newLesson = await Lesson.create({
-      title,
-      slug,
-      content,
-      videoUrl,
-      duration,
-      order,
-      isPreview
-    });
+    try {
+        const { chapterId, title, slug, content, videoUrl, duration, order, isPreview } = req.body;
+        const newLesson = await Lesson.create({
+            title,
+            slug,
+            content,
+            videoUrl,
+            duration,
+            order,
+            isPreview
+        });
 
-    const updatedChapter = await Chapter.findByIdAndUpdate(
-      chapterId,
-      { $push: { lessons: newLesson._id } },
-      { new: true }
-    ).populate('lessons'); 
+        const updatedChapter = await Chapter.findByIdAndUpdate(
+            chapterId,
+            { $push: { lessons: newLesson._id } },
+            { new: true }
+        ).populate('lessons');
 
-    reply.send({ message: 'Lesson created and added to chapter', lesson: newLesson, chapter: updatedChapter });
-  } catch (error) {
-    console.error(error);
-    reply.code(500).send({ error: 'Failed to create lesson and assign to chapter' });
-  }
+        reply.send({ message: 'Lesson created and added to chapter', lesson: newLesson, chapter: updatedChapter });
+    } catch (error) {
+        console.error(error);
+        reply.code(500).send({ error: 'Failed to create lesson and assign to chapter' });
+    }
 };
