@@ -109,30 +109,6 @@ const createMedia = async (req, reply) => {
 
     const uploadResult = await uploadStream();
 
-    // Destructure kết quả trả về từ Cloudinary
-    const {
-      url,
-      secure_url,
-      public_id,
-      format,
-      resource_type,
-      width,
-      height,
-      bytes,
-    } = uploadResult;
-
-    // Tạo bản ghi media mới
-    // const newMedia = new Media({
-    //   url,
-    //   secure_url,
-    //   public_id,
-    //   format,
-    //   resource_type,
-    //   width,
-    //   height,
-    //   bytes,
-    //   original_filename: originalFilename,
-    // });
     const newMedia = new Media({
       url: uploadResult.url,
       secure_url: uploadResult.secure_url,
@@ -163,39 +139,64 @@ const createMedia = async (req, reply) => {
 };
 
 
-
 const getAllMedia = async (req, reply) => {
   try {
-    const { page = 1, limit = 10, search = '', sort = 'desc' } = req.query;
-    const pageNumber = Math.max(1, parseInt(page));
-    const pageSize = Math.max(1, parseInt(limit));
-    const skip = (pageNumber - 1) * pageSize;
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100);
+    const sortBy = req.query.sortBy || 'createdAt';
+    const sortOrder = req.query.sort === 'asc' ? 1 : -1;
+    const search = req.query.search || '';
+    const searchFields = req.query.searchFields || '';
 
-    // Tìm kiếm theo tên media (hoặc bạn có thể thay đổi theo trường phù hợp)
-    const searchQuery = search
-      ? { name: { $regex: search, $options: 'i' } }
-      : {};
+    const skip = (page - 1) * limit;
 
-    // Sắp xếp theo ngày tạo, mặc định giảm dần
-    const sortOrder = sort === 'asc' ? 1 : -1;
+    const excludeFields = [
+      'page',
+      'limit',
+      'sort',
+      'sortBy',
+      'search',
+      'searchFields',
+    ];
 
-    const medias = await Media.find(searchQuery)
+    // Lọc các trường query động (ngoại trừ excludeFields)
+    const filterConditions = [];
+
+    for (const key in req.query) {
+      if (!excludeFields.includes(key)) {
+        filterConditions.push({ [key]: req.query[key] });
+      }
+    }
+
+    // Lọc search trên nhiều trường (searchFields: "title,description")
+    if (search && searchFields) {
+      const fields = searchFields.split(',').map(f => f.trim());
+      const searchConditions = fields.map(field => ({
+        [field]: { $regex: search, $options: 'i' },
+      }));
+      filterConditions.push({ $or: searchConditions });
+    }
+
+    // Kết hợp các điều kiện
+    const finalFilter = filterConditions.length > 0 ? { $and: filterConditions } : {};
+
+    // Truy vấn database
+    const totalMedias = await Media.countDocuments(finalFilter);
+    const medias = await Media.find(finalFilter)
       .skip(skip)
-      .limit(pageSize)
-      .sort({ createdAt: sortOrder });
+      .limit(limit)
+      .sort({ [sortBy]: sortOrder });
 
-    const totalMedias = await Media.countDocuments(searchQuery);
-    const totalPages = Math.ceil(totalMedias / pageSize);
-
+    // Trả kết quả
     reply.status(200).send({
       status: 'success',
       message: 'Media retrieved successfully',
       data: medias,
       pagination: {
-        currentPage: pageNumber,
-        totalPages,
-        totalMedias,
-        limit: pageSize,
+        totalItems: totalMedias,
+        currentPage: page,
+        totalPages: Math.ceil(totalMedias / limit),
+        limit,
       },
     });
   } catch (err) {
@@ -206,6 +207,7 @@ const getAllMedia = async (req, reply) => {
     });
   }
 };
+
 
 // Get a media by ID
 const getMediaById = async (req, reply) => {
