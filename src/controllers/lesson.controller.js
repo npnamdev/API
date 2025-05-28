@@ -58,7 +58,6 @@ exports.deleteLesson = async (req, reply) => {
 };
 
 
-// PUT /api/lessons/reorder
 exports.updateLessonOrder = async (req, reply) => {
   try {
     const { orders } = req.body; // [{ _id: 'lessonId1', order: 0 }, ...]
