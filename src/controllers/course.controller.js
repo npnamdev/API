@@ -69,12 +69,34 @@ exports.createManyCourses = async (req, reply) => {
 
 
 // Lấy 1 khóa học theo ID
-exports.getCourseById = async (req, reply) => {
+exports.getCourseById2 = async (req, reply) => {
     try {
         const course = await Course.findById(req.params.id).populate('instructor').populate('category');
         if (!course) return reply.code(404).send({ error: 'Course not found' });
         reply.send(course);
     } catch (error) {
+        reply.code(500).send({ error: 'Server error' });
+    }
+};
+
+// Lấy 1 khóa học theo ID, có populate chương học và bài học
+exports.getCourseById = async (req, reply) => {
+    try {
+        const course = await Course.findById(req.params.id)
+            .populate('instructors') // sửa instructors (dạng mảng) thay vì 'instructor'
+            .populate('category')
+            .populate({
+                path: 'chapters',
+                populate: {
+                    path: 'lessons'
+                }
+            });
+
+        if (!course) return reply.code(404).send({ error: 'Course not found' });
+
+        reply.send(course);
+    } catch (error) {
+        console.error(error);
         reply.code(500).send({ error: 'Server error' });
     }
 };
