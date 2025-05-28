@@ -8,7 +8,7 @@ const lessonSchema = new mongoose.Schema({
   duration: Number,
   order: Number,
   isPreview: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now }
+  chapterId: { type: mongoose.Schema.Types.ObjectId, ref: 'Chapter', required: true },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Lesson', lessonSchema);

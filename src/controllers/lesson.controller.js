@@ -8,6 +8,18 @@ exports.getAllLessons = async (req, reply) => {
     } catch (error) {
         reply.code(500).send({ error: 'Server error' });
     }
+    // try {
+    //     const { chapterId } = req.query;  // hoặc req.params nếu bạn dùng param đường dẫn
+
+    //     if (!chapterId) {
+    //         return reply.code(400).send({ error: 'chapterId is required' });
+    //     }
+
+    //     const lessons = await Lesson.find({ chapterId });
+    //     reply.send(lessons);
+    // } catch (error) {
+    //     reply.code(500).send({ error: 'Server error' });
+    // }
 };
 
 // Lấy bài học theo ID
@@ -59,19 +71,19 @@ exports.deleteLesson = async (req, reply) => {
 
 
 exports.updateLessonOrder = async (req, reply) => {
-  try {
-    const { orders } = req.body; // [{ _id: 'lessonId1', order: 0 }, ...]
+    try {
+        const { orders } = req.body; // [{ _id: 'lessonId1', order: 0 }, ...]
 
-    const bulkOps = orders.map(item => ({
-      updateOne: {
-        filter: { _id: item._id },
-        update: { order: item.order }
-      }
-    }));
+        const bulkOps = orders.map(item => ({
+            updateOne: {
+                filter: { _id: item._id },
+                update: { order: item.order }
+            }
+        }));
 
-    await Lesson.bulkWrite(bulkOps);
-    reply.send({ message: 'Lesson order updated successfully' });
-  } catch (error) {
-    reply.code(500).send({ error: 'Failed to update lesson order' });
-  }
+        await Lesson.bulkWrite(bulkOps);
+        reply.send({ message: 'Lesson order updated successfully' });
+    } catch (error) {
+        reply.code(500).send({ error: 'Failed to update lesson order' });
+    }
 }
