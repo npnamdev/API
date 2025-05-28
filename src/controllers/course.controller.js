@@ -16,7 +16,7 @@ exports.getAllCourses = async (request, reply) => {
             .skip(skip)
             .limit(pageSize)
             .sort({ createdAt: sortOrder })
-            .populate('instructor')
+            .populate('instructors')
             .populate('category');
 
         const totalCourses = await Course.countDocuments(searchQuery);
