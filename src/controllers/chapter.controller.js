@@ -1,16 +1,34 @@
 const Chapter = require('../models/chapter.model');
+const Lesson = require('../models/lesson.model');
 
 // Lấy danh sách tất cả chương học theo thứ tự kéo thả
+// exports.getAllChapters = async (req, reply) => {
+//     try {
+//         const chapters = await Chapter.find()
+//             .populate('lessons')
+//             .sort({ order: 1 });
+//         reply.send(chapters);
+//     } catch (error) {
+//         reply.code(500).send({ error: 'Server error' });
+//     }
+// };
+
+// GET /chapters?courseId=xxx
 exports.getAllChapters = async (req, reply) => {
     try {
-        const chapters = await Chapter.find()
+        const { courseId } = req.query;
+        const filter = courseId ? { courseId } : {};
+
+        const chapters = await Chapter.find(filter)
             .populate('lessons')
             .sort({ order: 1 });
+
         reply.send(chapters);
     } catch (error) {
         reply.code(500).send({ error: 'Server error' });
     }
 };
+
 
 // Lấy chương học theo ID
 exports.getChapterById = async (req, reply) => {
@@ -54,6 +72,21 @@ exports.deleteChapter = async (req, reply) => {
         const deletedChapter = await Chapter.findByIdAndDelete(req.params.id);
         if (!deletedChapter) return reply.code(404).send({ error: 'Chapter not found' });
         reply.send({ message: 'Chapter deleted successfully' });
+    } catch (error) {
+        reply.code(500).send({ error: 'Server error' });
+    }
+};
+
+exports.deleteChapter = async (req, reply) => {
+    try {
+        const chapter = await Chapter.findById(req.params.id);
+        if (!chapter) return reply.code(404).send({ error: 'Chapter not found' });
+
+        // Xoá tất cả bài học thuộc chương này
+        await Lesson.deleteMany({ _id: { $in: chapter.lessons } });
+
+        await Chapter.findByIdAndDelete(req.params.id);
+        reply.send({ message: 'Chapter and lessons deleted successfully' });
     } catch (error) {
         reply.code(500).send({ error: 'Server error' });
     }

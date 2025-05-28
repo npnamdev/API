@@ -1,4 +1,5 @@
 const Course = require('../models/course.model');
+const Chapter = require('../models/chapter.model');
 
 exports.getAllCourses = async (request, reply) => {
     try {
@@ -67,18 +68,6 @@ exports.createManyCourses = async (req, reply) => {
     }
 };
 
-
-// Lấy 1 khóa học theo ID
-exports.getCourseById2 = async (req, reply) => {
-    try {
-        const course = await Course.findById(req.params.id).populate('instructor').populate('category');
-        if (!course) return reply.code(404).send({ error: 'Course not found' });
-        reply.send(course);
-    } catch (error) {
-        reply.code(500).send({ error: 'Server error' });
-    }
-};
-
 // Lấy 1 khóa học theo ID, có populate chương học và bài học
 exports.getCourseById = async (req, reply) => {
     try {
@@ -125,3 +114,4 @@ exports.deleteCourse = async (req, reply) => {
         reply.code(500).send({ error: 'Server error' });
     }
 };
+
