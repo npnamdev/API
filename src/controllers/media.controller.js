@@ -77,49 +77,6 @@ const uploadToImageKit = async (req, reply) => {
   }
 };
 
-// const createMedia = async (req, reply) => {
-//   try {
-//     if (!req.isMultipart()) { return reply.status(400).send({ message: 'No file uploaded' }); }
-//     const data = await req.file();
-//     const fileBuffer = await data.toBuffer();
-
-//     const uploadStream = () =>
-//       new Promise((resolve, reject) => {
-//         const stream = cloudinary.uploader.upload_stream(
-//           { folder: 'uploads' },
-//           (error, result) => {
-//             if (result) {
-//               resolve(result);
-//             } else {
-//               reject(error);
-//             }
-//           }
-//         );
-//         streamifier.createReadStream(fileBuffer).pipe(stream);
-//       });
-
-//     const uploadResult = await uploadStream();
-//     const { url, secure_url, public_id, format, resource_type, width, height, bytes, original_filename } = uploadResult;
-//     const newMedia = new Media({
-//       url,
-//       secure_url,
-//       public_id,
-//       format,
-//       resource_type,
-//       width,
-//       height,
-//       bytes,
-//       original_filename
-//     });
-
-//     await newMedia.save();
-
-//     reply.status(201).send(newMedia);
-//   } catch (err) {
-//     reply.status(500).send({ message: 'Error creating media', error: err });
-//   }
-// };
-
 const createMedia = async (req, reply) => {
   try {
     if (!req.isMultipart()) {
@@ -165,17 +122,36 @@ const createMedia = async (req, reply) => {
     } = uploadResult;
 
     // Tạo bản ghi media mới
+    // const newMedia = new Media({
+    //   url,
+    //   secure_url,
+    //   public_id,
+    //   format,
+    //   resource_type,
+    //   width,
+    //   height,
+    //   bytes,
+    //   original_filename: originalFilename,
+    // });
     const newMedia = new Media({
-      url,
-      secure_url,
-      public_id,
-      format,
-      resource_type,
-      width,
-      height,
-      bytes,
+      url: uploadResult.url,
+      secure_url: uploadResult.secure_url,
+      public_id: uploadResult.public_id,
+      format: uploadResult.format,
+      resource_type: uploadResult.resource_type,
+      width: uploadResult.width,
+      height: uploadResult.height,
+      bytes: uploadResult.bytes,
       original_filename: originalFilename,
+
+      duration: uploadResult.duration,
+      frame_rate: uploadResult.frame_rate,
+      bit_rate: uploadResult.bit_rate,
+
+      audio: uploadResult.audio || undefined,
+      video: uploadResult.video || undefined,
     });
+
 
     await newMedia.save();
 
