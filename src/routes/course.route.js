@@ -3,6 +3,7 @@ const courseController = require('../controllers/course.controller');
 async function courseRoutes(fastify, options) {
     fastify.get('/courses', courseController.getAllCourses);
     fastify.get('/courses/:id', courseController.getCourseById);
+    fastify.get('/courses/:id/full-detail', courseController.getCourseFullDetail);
     fastify.post('/courses', courseController.createCourse);
     fastify.post('/courses/bulk', courseController.createManyCourses);
     fastify.put('/courses/:id', courseController.updateCourse);
