@@ -2,8 +2,23 @@ const Order = require('../models/order.model');
 
 exports.createOrder = async (req, reply) => {
     try {
-        const order = new Order(req.body);
+        const { courses } = req.body; // mảng ObjectId khóa học
+
+        // Lấy giá của các khóa học đã chọn
+        const courseDocs = await Course.find({ _id: { $in: courses } });
+        if (!courseDocs.length) return reply.code(400).send({ error: 'Courses not found' });
+
+        // Tính tổng giá
+        const totalPrice = courseDocs.reduce((sum, course) => sum + (course.price || 0), 0);
+
+        // Tạo đơn hàng với totalPrice
+        const order = new Order({
+            ...req.body,
+            totalPrice,
+        });
+
         await order.save();
+
         reply.code(201).send(order);
     } catch (error) {
         reply.code(500).send({ error: error.message });
@@ -19,7 +34,7 @@ exports.getAllOrders = async (req, reply) => {
 
         const orders = await Order.find(filter)
             .populate('user', 'name email')
-            .populate('courses.course', 'title')
+            .populate('courses', 'title')  // populate courses, lấy trường title
             .skip(skip)
             .limit(Number(limit))
             .sort({ createdAt: sortOrder });
@@ -45,7 +60,7 @@ exports.getOrderById = async (req, reply) => {
     try {
         const order = await Order.findById(req.params.id)
             .populate('user', 'name email')
-            .populate('courses.course', 'title');
+            .populate('courses', 'title');
         if (!order) return reply.code(404).send({ error: 'Order not found' });
         reply.send(order);
     } catch (error) {
