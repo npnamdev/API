@@ -1,4 +1,5 @@
 const Order = require('../models/order.model');
+const Course = require('../models/course.model');
 
 exports.createOrder = async (req, reply) => {
     try {
