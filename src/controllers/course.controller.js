@@ -72,14 +72,8 @@ exports.createManyCourses = async (req, reply) => {
 exports.getCourseById = async (req, reply) => {
     try {
         const course = await Course.findById(req.params.id)
-            .populate('instructors') // sửa instructors (dạng mảng) thay vì 'instructor'
-            .populate('category')
-            .populate({
-                path: 'chapters',
-                populate: {
-                    path: 'lessons'
-                }
-            });
+            .populate('instructors')
+            .populate('category');
 
         if (!course) return reply.code(404).send({ error: 'Course not found' });
 
@@ -89,6 +83,7 @@ exports.getCourseById = async (req, reply) => {
         reply.code(500).send({ error: 'Server error' });
     }
 };
+
 
 // Cập nhật khóa học
 exports.updateCourse = async (req, reply) => {
