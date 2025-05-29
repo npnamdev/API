@@ -21,6 +21,7 @@ const courseSchema = new mongoose.Schema({
         text: { type: String, default: '' },
         color: { type: String, default: '' }
     },
+    chapters: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Chapter' }],
 }, { timestamps: true });
 
 const Course = mongoose.model('Course', courseSchema);
