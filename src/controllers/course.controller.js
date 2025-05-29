@@ -1,5 +1,4 @@
 const Course = require('../models/course.model');
-const Chapter = require('../models/chapter.model');
 
 exports.getAllCourses = async (request, reply) => {
     try {
