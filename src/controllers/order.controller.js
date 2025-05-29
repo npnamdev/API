@@ -2,16 +2,17 @@ const Order = require('../models/order.model');
 
 exports.createOrder = async (req, reply) => {
     try {
-        const { courses } = req.body; // mảng ObjectId khóa học
+        const { courses } = req.body;
 
-        // Lấy giá của các khóa học đã chọn
+        if (!courses || !Array.isArray(courses) || courses.length === 0) {
+            return reply.code(400).send({ error: 'Courses is required and must be a non-empty array' });
+        }
+
         const courseDocs = await Course.find({ _id: { $in: courses } });
         if (!courseDocs.length) return reply.code(400).send({ error: 'Courses not found' });
 
-        // Tính tổng giá
         const totalPrice = courseDocs.reduce((sum, course) => sum + (course.price || 0), 0);
 
-        // Tạo đơn hàng với totalPrice
         const order = new Order({
             ...req.body,
             totalPrice,
@@ -24,6 +25,7 @@ exports.createOrder = async (req, reply) => {
         reply.code(500).send({ error: error.message });
     }
 };
+
 
 exports.getAllOrders = async (req, reply) => {
     try {
