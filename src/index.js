@@ -62,6 +62,8 @@ fastify.get('/dropbox/callback', async (req, reply) => {
   });
 
   try {
+    console.log("Xin chào");
+    
     const tokenRes = await dbx.auth.getAccessTokenFromCode(REDIRECT_URI, code);
     const accessToken = tokenRes.result.access_token;
     const dbxClient = new Dropbox({ accessToken, fetch });
@@ -69,12 +71,16 @@ fastify.get('/dropbox/callback', async (req, reply) => {
     // Có thể lưu accessToken vào DB nếu cần thiết
     // Redirect về frontend + gửi account info (có thể dùng cookie, query, localStorage tùy nhu cầu)
     // reply.redirect(`${FRONTEND_SUCCESS_URL}?email=${accountInfo.result.email}`);
+
+    console.log("đã gọi vào đây", accessToken);
+
     reply
       .setCookie('dropbox_token', accessToken, {
-        path: '/',
         httpOnly: true,
         secure: true,
-        sameSite: 'Lax'
+        sameSite: 'None',
+        path: '/',
+        domain: '.wedly.info',
       })
       .redirect(`${FRONTEND_SUCCESS_URL}?email=${accountInfo.result.email}`);
   } catch (err) {
