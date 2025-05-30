@@ -39,6 +39,8 @@ fastify.register(require('./routes/userGroup.route'), { prefix: process.env.API_
 fastify.register(require('./routes/contact.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/order.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/section.route'), { prefix: process.env.API_PREFIX || '/api' });
+fastify.register(require('./routes/dropbox.route'), { prefix: process.env.API_PREFIX || '/api' });
+
 
 fastify.get('/ping', async (request, reply) => { reply.code(200).send('pong') });
 fastify.get("/", (req, reply) => { return reply.sendFile("index.html") });
@@ -66,7 +68,15 @@ fastify.get('/dropbox/callback', async (req, reply) => {
     const accountInfo = await dbxClient.usersGetCurrentAccount();
     // Có thể lưu accessToken vào DB nếu cần thiết
     // Redirect về frontend + gửi account info (có thể dùng cookie, query, localStorage tùy nhu cầu)
-    reply.redirect(`${FRONTEND_SUCCESS_URL}?email=${accountInfo.result.email}`);
+    // reply.redirect(`${FRONTEND_SUCCESS_URL}?email=${accountInfo.result.email}`);
+    reply
+      .setCookie('dropbox_token', accessToken, {
+        path: '/',
+        httpOnly: true,
+        secure: true,
+        sameSite: 'Lax'
+      })
+      .redirect(`${FRONTEND_SUCCESS_URL}?email=${accountInfo.result.email}`);
   } catch (err) {
     console.error('Dropbox auth failed:', err);
     reply.status(500).send({ error: 'Dropbox authentication failed' });
