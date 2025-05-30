@@ -51,56 +51,26 @@ fastify.get('/dropbox/login', async (req, reply) => {
   reply.redirect(authUrl);
 });
 
-// Tạo trong file riêng hoặc viết trực tiếp vào trong main file
-fastify.register(async function (instance, opts) {
-  instance.get('/dropbox/login', async (req, reply) => {
-    const dbx = new Dropbox({ clientId: DROPBOX_CLIENT_ID, fetch });
-    const authUrl = await dbx.auth.getAuthenticationUrl(REDIRECT_URI, null, 'code');
-    reply.redirect(authUrl);
+fastify.get('/dropbox/callback', async (req, reply) => {
+  const { code } = req.query;
+  const dbx = new Dropbox({
+    clientId: DROPBOX_CLIENT_ID,
+    clientSecret: DROPBOX_CLIENT_SECRET,
+    fetch,
   });
 
-  instance.get('/dropbox/callback', async (req, reply) => {
-    const { code } = req.query;
-    const dbx = new Dropbox({
-      clientId: DROPBOX_CLIENT_ID,
-      clientSecret: DROPBOX_CLIENT_SECRET,
-      fetch,
-    });
-
-    try {
-      const tokenRes = await dbx.auth.getAccessTokenFromCode(REDIRECT_URI, code);
-      const accessToken = tokenRes.result.access_token;
-      const dbxClient = new Dropbox({ accessToken, fetch });
-      const accountInfo = await dbxClient.usersGetCurrentAccount();
-      reply.redirect(`${FRONTEND_SUCCESS_URL}?email=${accountInfo.result.email}`);
-    } catch (err) {
-      console.error('Dropbox auth failed:', err);
-      reply.status(500).send({ error: 'Dropbox authentication failed' });
-    }
-  });
-
-  instance.post('/dropbox/files', async (req, reply) => {
-    const { accessToken } = req.body;
-    if (!accessToken) {
-      return reply.status(400).send({ error: 'Missing access token' });
-    }
-
-    try {
-      const dbx = new Dropbox({ accessToken, fetch });
-      const response = await dbx.filesListFolder({ path: '' });
-      const files = response.result.entries.map(file => ({
-        name: file.name,
-        path: file.path_display,
-        type: file['.tag'],
-        id: file.id,
-      }));
-
-      return reply.send({ files });
-    } catch (error) {
-      console.error('Dropbox file list error:', error);
-      return reply.status(500).send({ error: 'Failed to list files' });
-    }
-  });
+  try {
+    const tokenRes = await dbx.auth.getAccessTokenFromCode(REDIRECT_URI, code);
+    const accessToken = tokenRes.result.access_token;
+    const dbxClient = new Dropbox({ accessToken, fetch });
+    const accountInfo = await dbxClient.usersGetCurrentAccount();
+    // Có thể lưu accessToken vào DB nếu cần thiết
+    // Redirect về frontend + gửi account info (có thể dùng cookie, query, localStorage tùy nhu cầu)
+    reply.redirect(`${FRONTEND_SUCCESS_URL}?email=${accountInfo.result.email}`);
+  } catch (err) {
+    console.error('Dropbox auth failed:', err);
+    reply.status(500).send({ error: 'Dropbox authentication failed' });
+  }
 });
 
 (async () => {
