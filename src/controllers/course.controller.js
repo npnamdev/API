@@ -2,59 +2,99 @@ const Course = require('../models/course.model');
 const Chapter = require('../models/chapter.model');
 const Lesson = require('../models/lesson.model');
 
-// exports.getCourseFullDetail = async (req, reply) => {
-//     try {
-//         const courseId = req.params.id;
-
-//         const course = await Course.findById(courseId);
-//         if (!course) return reply.code(404).send({ message: 'Course not found' });
-
-//         const chapters = await Chapter.find({ courseId: courseId });
-//         const chapterIds = chapters.map(ch => ch._id);
-
-//         const lessons = await Lesson.find({ chapterId: { $in: chapterIds } });
-//         const fullChapters = chapters.map(ch => ({
-//             ...ch.toObject(),
-//             lessons: lessons.filter(lesson => lesson.chapterId.toString() === ch._id.toString())
-//         }));
-
-//         return reply.send({
-//             ...course.toObject(),
-//             chapters: fullChapters
-//         });
-
-//     } catch (error) {
-//         console.error(error);
-//         return reply.code(500).send({ message: 'Internal server error' });
-//     }
-// };
-
-exports.getCourseFullDetail = async (req, reply) => {
+exports.duplicateCourse = async (req, reply) => {
     try {
         const courseId = req.params.id;
 
-        const course = await Course.findById(courseId);
+        const course = await Course.findById(courseId)
+            .populate({ path: 'category', select: '_id' })
+            .populate({ path: 'instructors', select: '_id' });
+
         if (!course) {
             return reply.code(404).send({ message: 'Course not found' });
         }
 
-        // Lấy danh sách chương, sắp xếp theo 'order'
+        const newCourse = new Course({
+            title: course.title + ' (Copy)',
+            slug: course.slug + '-' + Date.now(), // Tạo slug mới tránh trùng
+            description: course.description,
+            thumbnail: course.thumbnail,
+            price: course.price,
+            discount: course.discount,
+            category: course.category?._id || null,
+            level: course.level,
+            language: course.language,
+            instructors: course.instructors.map(i => i._id),
+            tags: course.tags,
+            isPublished: false,
+            status: 'draft',
+            accessDuration: course.accessDuration,
+            badge: course.badge,
+            chapters: [], // sẽ cập nhật sau
+        });
+
+        await newCourse.save();
+
+        // ✅ Clone Chapter & Lesson
+        const oldChapters = await Chapter.find({ courseId }).sort({ order: 1 });
+        const chapterMap = new Map();
+
+        for (const oldChapter of oldChapters) {
+            const newChapter = new Chapter({
+                courseId: newCourse._id,
+                title: oldChapter.title,
+                description: oldChapter.description,
+                order: oldChapter.order,
+            });
+            await newChapter.save();
+            chapterMap.set(oldChapter._id.toString(), newChapter._id);
+
+            // Clone bài học (lessons) trong chapter đó
+            const oldLessons = await Lesson.find({ chapterId: oldChapter._id });
+            for (const oldLesson of oldLessons) {
+                const newLesson = new Lesson({
+                    chapterId: newChapter._id,
+                    title: oldLesson.title,
+                    content: oldLesson.content,
+                    videoUrl: oldLesson.videoUrl,
+                    order: oldLesson.order,
+                });
+                await newLesson.save();
+            }
+
+            newCourse.chapters.push(newChapter._id);
+        }
+
+        await newCourse.save();
+
+        return reply.send({ message: 'Course duplicated successfully', course: newCourse });
+
+    } catch (error) {
+        console.error(error);
+        return reply.code(500).send({ message: 'Internal server error' });
+    }
+};
+
+exports.getCourseFullDetail = async (req, reply) => {
+    try {
+        const courseId = req.params.id;
+        const course = await Course.findById(courseId)
+            .populate({ path: 'category', select: 'name' })
+            .populate({ path: 'instructors', select: 'fullName' });
+
+        if (!course) {
+            return reply.code(404).send({ message: 'Course not found' });
+        }
+
         const chapters = await Chapter.find({ courseId }).sort({ order: 1 });
-
-        // Lấy ID các chương
         const chapterIds = chapters.map(ch => ch._id);
-
-        // Lấy danh sách bài học, sắp xếp theo 'order'
         const lessons = await Lesson.find({ chapterId: { $in: chapterIds } }).sort({ order: 1 });
 
-        // Gộp bài học vào từng chương
         const fullChapters = chapters.map(ch => ({
             ...ch.toObject(),
-            lessons: lessons
-                .filter(lesson => lesson.chapterId.toString() === ch._id.toString())
+            lessons: lessons.filter(lesson => lesson.chapterId.toString() === ch._id.toString())
         }));
 
-        // Trả về dữ liệu đầy đủ
         return reply.send({
             ...course.toObject(),
             chapters: fullChapters
@@ -107,7 +147,6 @@ exports.getAllCourses = async (request, reply) => {
     }
 };
 
-
 exports.createCourse = async (req, reply) => {
     try {
         const newCourse = new Course(req.body);
@@ -133,7 +172,6 @@ exports.createManyCourses = async (req, reply) => {
     }
 };
 
-// Lấy 1 khóa học theo ID, có populate chương học và bài học
 exports.getCourseById = async (req, reply) => {
     try {
         const course = await Course.findById(req.params.id)
@@ -149,8 +187,6 @@ exports.getCourseById = async (req, reply) => {
     }
 };
 
-
-// Cập nhật khóa học
 exports.updateCourse = async (req, reply) => {
     try {
         const updatedCourse = await Course.findByIdAndUpdate(req.params.id, req.body, {
@@ -164,7 +200,6 @@ exports.updateCourse = async (req, reply) => {
     }
 };
 
-// Xóa khóa học
 exports.deleteCourse = async (req, reply) => {
     try {
         const deletedCourse = await Course.findByIdAndDelete(req.params.id);
