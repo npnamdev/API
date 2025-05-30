@@ -77,6 +77,33 @@ fastify.get('/dropbox/callback', async (req, reply) => {
   }
 });
 
+ fastify.post('/dropbox/files', async (req, reply) => {
+    const { accessToken } = req.body;
+
+    if (!accessToken) {
+      return reply.status(400).send({ error: 'Missing access token' });
+    }
+
+    try {
+      const dbx = new Dropbox({ accessToken, fetch });
+
+      // Lấy file ở thư mục gốc (path = "")
+      const response = await dbx.filesListFolder({ path: '' });
+
+      const files = response.result.entries.map(file => ({
+        name: file.name,
+        path: file.path_display,
+        type: file['.tag'],
+        id: file.id,
+      }));
+
+      return reply.send({ files });
+    } catch (error) {
+      console.error('Dropbox file list error:', error);
+      return reply.status(500).send({ error: 'Failed to list files' });
+    }
+  })
+
 (async () => {
   try {
     await fastify.listen({ port: process.env.PORT || 8000, host: '0.0.0.0' });
