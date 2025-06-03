@@ -12,7 +12,7 @@ async function dropboxRoutes(fastify, opts) {
     // ===== Dropbox OAuth Flow =====
     fastify.get('/dropbox/login', async (req, reply) => {
         const dbx = new Dropbox({ clientId: DROPBOX_CLIENT_ID, fetch });
-        const authUrl = await dbx.auth.getAuthenticationUrl(REDIRECT_URI, null, 'code'); // Thêm 'code' để dùng authorization code flow
+        const authUrl = await dbx.auth.getAuthenticationUrl(REDIRECT_URI, null, 'code');
         reply.redirect(authUrl);
     });
 

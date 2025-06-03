@@ -31,7 +31,7 @@ fastify.register(require('./routes/contact.route'), { prefix: process.env.API_PR
 fastify.register(require('./routes/order.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/section.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/dropbox.route'), { prefix: process.env.API_PREFIX || '/api' });
-fastify.register(require('./routes/activation.route'), { prefix: process.env.API_PREFIX || '/api' });
+// fastify.register(require('./routes/activation.route'), { prefix: process.env.API_PREFIX || '/api' });
 
 
 fastify.get('/ping', async (request, reply) => { reply.code(200).send('pong') });
