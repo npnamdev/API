@@ -1,6 +1,5 @@
 const ActivationCode = require('../models/activation.model');
 
-// Lấy tất cả mã kích hoạt (có phân trang, tìm kiếm, lọc)
 exports.getAllActivationCodes = async (req, reply) => {
     try {
         const {
@@ -53,14 +52,12 @@ exports.getAllActivationCodes = async (req, reply) => {
     }
 };
 
-// Lấy 1 mã kích hoạt theo ID
 exports.getActivationCodeById = async (req, reply) => {
     const code = await ActivationCode.findById(req.params.id);
     if (!code) return reply.code(404).send({ message: 'Activation code not found' });
     reply.send(code);
 };
 
-// Tạo mới mã kích hoạt
 exports.createActivationCode = async (req, reply) => {
     try {
         const newCode = new ActivationCode(req.body);
@@ -71,7 +68,6 @@ exports.createActivationCode = async (req, reply) => {
     }
 };
 
-// Cập nhật mã kích hoạt theo ID
 exports.updateActivationCode = async (req, reply) => {
     try {
         const updated = await ActivationCode.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -82,7 +78,6 @@ exports.updateActivationCode = async (req, reply) => {
     }
 };
 
-// Xóa mã kích hoạt theo ID
 exports.deleteActivationCode = async (req, reply) => {
     const deleted = await ActivationCode.findByIdAndDelete(req.params.id);
     if (!deleted) return reply.code(404).send({ message: 'Activation code not found' });
