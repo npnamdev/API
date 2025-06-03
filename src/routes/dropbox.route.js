@@ -9,17 +9,7 @@ const REDIRECT_URI = process.env.DROPBOX_REDIRECT_URI;
 async function dropboxRoutes(fastify, opts) {
     fastify.get('/dropbox/login', async (req, reply) => {
         const dbx = new Dropbox({ clientId: DROPBOX_CLIENT_ID, fetch });
-        // const authUrl = await dbx.auth.getAuthenticationUrl(REDIRECT_URI, null, 'code');
-        const authUrl = await dbx.auth.getAuthenticationUrl(
-            REDIRECT_URI,
-            null,
-            'code',
-            'offline',
-            null,
-            'none',
-            false
-        );
-
+        const authUrl = await dbx.auth.getAuthenticationUrl(REDIRECT_URI, null, 'code', 'offline', null, 'none', false);
         reply.redirect(authUrl);
     });
 
@@ -42,7 +32,7 @@ async function dropboxRoutes(fastify, opts) {
                     secure: true,
                     sameSite: 'None',
                     domain: '.wedly.info',
-                    maxAge: 60 * 60 * 24 * 30 // 30 ngày
+                    maxAge: 60 * 60 * 24 * 30
                 })
                 .type('text/html')
                 .send(`
@@ -72,8 +62,13 @@ async function dropboxRoutes(fastify, opts) {
     });
 
     fastify.get("/dropbox/files", async (req, reply) => {
-        const token = req.cookies.dropbox_token;
-        if (!token) return reply.status(401).send({ error: "Unauthorized" });
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return reply.status(401).send({ error: "Unauthorized: No token provided" });
+        }
+
+        const token = authHeader.split(" ")[1];
         const dbx = new Dropbox({ accessToken: token, fetch });
 
         try {
