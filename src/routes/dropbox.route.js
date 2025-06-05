@@ -69,45 +69,23 @@ async function dropboxRoutes(fastify, opts) {
             return reply.status(401).send({ error: "Unauthorized: No token provided" });
         }
 
-        if (!refreshToken) {
-            return reply.status(401).send({ error: "No refresh token found" });
-        }
-
-        let accessToken = authHeader.split(" ")[1];
-
-        // Hàm kiểm tra access token còn hợp lệ không
-        async function isAccessTokenValid(token) {
-            try {
-                await new Dropbox({ accessToken: token, fetch }).usersGetCurrentAccount();
-                return true;
-            } catch (e) {
-                return false;
-            }
-        }
-
-        // Nếu token không hợp lệ, refresh token để lấy token mới
-        if (!(await isAccessTokenValid(accessToken))) {
-            try {
-                const dbxRefresh = new Dropbox({
-                    clientId: DROPBOX_CLIENT_ID,
-                    clientSecret: DROPBOX_CLIENT_SECRET,
-                    fetch,
-                });
-
-                const tokenResponse = await dbxRefresh.auth.getAccessTokenFromRefreshToken(refreshToken);
-                accessToken = tokenResponse.result.access_token;
-
-                // Gửi access token mới về client để client cập nhật (tuỳ chọn)
-                reply.header('x-new-access-token', accessToken);
-            } catch (err) {
-                console.error('Failed to refresh access token:', err);
-                return reply.status(401).send({ error: 'Invalid refresh token' });
-            }
-        }
-
-        const dbx = new Dropbox({ accessToken, fetch });
+        const token = authHeader.split(" ")[1];
+        const dbx = new Dropbox({
+            clientId: DROPBOX_CLIENT_ID,
+            clientSecret: DROPBOX_CLIENT_SECRET,
+            accessToken: token,
+            refreshToken: refreshToken, // Cung cấp refresh token
+            fetch
+        });
 
         try {
+            // Kiểm tra và làm mới access token nếu cần
+            await dbx.auth.checkAndRefreshAccessToken();
+
+            // Lấy access token mới (nếu đã được làm mới)
+            const newAccessToken = dbx.auth.getAccessToken();
+
+            // Lấy danh sách file từ Dropbox
             const listRes = await dbx.filesListFolder({ path: "" });
 
             const filesWithPreview = await Promise.all(
@@ -134,9 +112,16 @@ async function dropboxRoutes(fastify, opts) {
                 })
             );
 
-            reply.send(filesWithPreview);
+            reply.send({
+                files: filesWithPreview,
+                newAccessToken: newAccessToken !== token ? newAccessToken : undefined
+            });
         } catch (err) {
-            console.error(err);
+            console.error("Lỗi khi truy xuất file hoặc làm mới token:", err);
+            if (err.status === 401) {
+                // Nếu lỗi 401, có thể refresh token không hợp lệ
+                return reply.status(401).send({ error: "Unauthorized: Invalid or expired token" });
+            }
             reply.status(500).send({ error: "Failed to fetch files" });
         }
     });
