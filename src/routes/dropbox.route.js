@@ -1,4 +1,3 @@
-// routes/dropbox.route.js
 const { Dropbox } = require("dropbox");
 const fetch = require("node-fetch");
 
@@ -32,7 +31,7 @@ async function dropboxRoutes(fastify, opts) {
                     secure: true,
                     sameSite: 'None',
                     domain: '.wedly.info',
-                    maxAge: 60 * 60 * 24 * 30
+                    // Loại bỏ maxAge để cookie tồn tại vô thời hạn
                 })
                 .type('text/html')
                 .send(`
@@ -44,7 +43,6 @@ async function dropboxRoutes(fastify, opts) {
                                     email: "${accountInfo.result.email}",
                                     accessToken: "${accessToken}",
                                 }, 'https://wedly.info');
-
                                 console.log('Đã gửi message về cửa sổ cha thành công');
                             } else {
                                 console.warn('Không tìm thấy hoặc không thể gửi message về cửa sổ cha');
@@ -54,7 +52,7 @@ async function dropboxRoutes(fastify, opts) {
                         }
                         window.close();
                     </script>
-            `);
+                `);
         } catch (err) {
             console.error('Dropbox auth failed:', err);
             reply.status(500).send({ error: 'Dropbox authentication failed' });
@@ -63,10 +61,14 @@ async function dropboxRoutes(fastify, opts) {
 
     fastify.get("/dropbox/files", async (req, reply) => {
         const authHeader = req.headers.authorization;
-        const refreshToken = req.cookies.dropbox_refresh_token; // Lấy refresh token từ cookie
+        const refreshToken = req.cookies.dropbox_refresh_token;
 
         if (!authHeader || !authHeader.startsWith("Bearer ")) {
-            return reply.status(401).send({ error: "Unauthorized: No token provided" });
+            return reply.status(401).send({ error: "Unauthorized: No access token provided" });
+        }
+
+        if (!refreshToken) {
+            return reply.status(401).send({ error: "Unauthorized: No refresh token provided. Please re-authenticate with Dropbox." });
         }
 
         const token = authHeader.split(" ")[1];
@@ -74,25 +76,20 @@ async function dropboxRoutes(fastify, opts) {
             clientId: DROPBOX_CLIENT_ID,
             clientSecret: DROPBOX_CLIENT_SECRET,
             accessToken: token,
-            refreshToken: refreshToken, // Cung cấp refresh token
+            refreshToken: refreshToken,
             fetch
         });
 
         try {
-            // Kiểm tra và làm mới access token nếu cần
             await dbx.auth.checkAndRefreshAccessToken();
-
-            // Lấy access token mới (nếu đã được làm mới)
             const newAccessToken = dbx.auth.getAccessToken();
-
-            // Lấy danh sách file từ Dropbox
             const listRes = await dbx.filesListFolder({ path: "" });
 
             const filesWithPreview = await Promise.all(
                 listRes.result.entries.map(async (file) => {
                     let previewUrl = null;
 
-                    if (file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+                    if (file['.tag'] === 'file' && file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
                         try {
                             const tempLinkRes = await dbx.filesGetTemporaryLink({ path: file.path_lower });
                             previewUrl = tempLinkRes.result.link;
@@ -105,8 +102,8 @@ async function dropboxRoutes(fastify, opts) {
                         id: file.id,
                         name: file.name,
                         path_lower: file.path_lower,
-                        size: file.size,
-                        client_modified: file.client_modified,
+                        size: file.size || 0,
+                        client_modified: file.client_modified || new Date().toISOString(),
                         previewUrl,
                     };
                 })
@@ -119,8 +116,7 @@ async function dropboxRoutes(fastify, opts) {
         } catch (err) {
             console.error("Lỗi khi truy xuất file hoặc làm mới token:", err);
             if (err.status === 401) {
-                // Nếu lỗi 401, có thể refresh token không hợp lệ
-                return reply.status(401).send({ error: "Unauthorized: Invalid or expired token" });
+                return reply.status(401).send({ error: "Unauthorized: Invalid or expired refresh token. Please re-authenticate with Dropbox." });
             }
             reply.status(500).send({ error: "Failed to fetch files" });
         }
