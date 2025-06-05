@@ -7,15 +7,29 @@ const DROPBOX_CLIENT_SECRET = process.env.DROPBOX_CLIENT_SECRET;
 const REDIRECT_URI = process.env.DROPBOX_REDIRECT_URI;
 
 async function dropboxRoutes(fastify, opts) {
+    // Step 1: Dropbox login redirect
     fastify.get('/dropbox/login', async (req, reply) => {
         const dbx = new Dropbox({ clientId: DROPBOX_CLIENT_ID, fetch });
-        const authUrl = await dbx.auth.getAuthenticationUrl(REDIRECT_URI, null, 'code', 'offline', null, 'none', false);
+        const authUrl = await dbx.auth.getAuthenticationUrl(
+            REDIRECT_URI,
+            null,
+            'code',
+            'offline',
+            null,
+            'none',
+            false
+        );
         reply.redirect(authUrl);
     });
 
+    // Step 2: Dropbox callback - receive tokens
     fastify.get('/dropbox/callback', async (req, reply) => {
         const { code } = req.query;
-        const dbx = new Dropbox({ clientId: DROPBOX_CLIENT_ID, clientSecret: DROPBOX_CLIENT_SECRET, fetch });
+        const dbx = new Dropbox({
+            clientId: DROPBOX_CLIENT_ID,
+            clientSecret: DROPBOX_CLIENT_SECRET,
+            fetch
+        });
 
         try {
             const tokenRes = await dbx.auth.getAccessTokenFromCode(REDIRECT_URI, code);
@@ -24,7 +38,7 @@ async function dropboxRoutes(fastify, opts) {
             const dbxClient = new Dropbox({ accessToken, fetch });
             const accountInfo = await dbxClient.usersGetCurrentAccount();
 
-            console.log("check refreshToken", refreshToken);
+            // Store refresh token in cookie
             reply
                 .setCookie('dropbox_refresh_token', refreshToken, {
                     path: '/',
@@ -42,34 +56,55 @@ async function dropboxRoutes(fastify, opts) {
                                 window.opener.postMessage({
                                     type: 'DROPBOX_AUTH_SUCCESS',
                                     email: "${accountInfo.result.email}",
-                                    accessToken: "${accessToken}",
+                                    accessToken: "${accessToken}"
                                 }, 'https://wedly.info');
-
-                                console.log('Đã gửi message về cửa sổ cha thành công');
-                            } else {
-                                console.warn('Không tìm thấy hoặc không thể gửi message về cửa sổ cha');
                             }
                         } catch (error) {
                             console.error('Lỗi khi gửi message:', error);
                         }
                         window.close();
                     </script>
-            `);
+                `);
         } catch (err) {
             console.error('Dropbox auth failed:', err);
             reply.status(500).send({ error: 'Dropbox authentication failed' });
         }
     });
 
+    // Step 3: Dropbox list files, with token refresh support
     fastify.get("/dropbox/files", async (req, reply) => {
         const authHeader = req.headers.authorization;
+        const refreshToken = req.cookies.dropbox_refresh_token;
+        let accessToken = authHeader?.startsWith("Bearer ") ? authHeader.split(" ")[1] : null;
+        let dbx;
 
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
-            return reply.status(401).send({ error: "Unauthorized: No token provided" });
+        try {
+            // First, try with accessToken
+            if (accessToken) {
+                dbx = new Dropbox({ accessToken, fetch });
+                await dbx.usersGetCurrentAccount(); // Validate token
+            } else {
+                throw new Error("No or invalid access token, trying refresh");
+            }
+        } catch (err) {
+            if (!refreshToken) {
+                return reply.status(401).send({ error: "Access token expired and no refresh token available" });
+            }
+
+            try {
+                dbx = new Dropbox({
+                    clientId: DROPBOX_CLIENT_ID,
+                    clientSecret: DROPBOX_CLIENT_SECRET,
+                    refreshToken,
+                    fetch,
+                });
+                await dbx.auth.refreshAccessToken();
+                accessToken = dbx.auth.getAccessToken();
+            } catch (refreshErr) {
+                console.error("Failed to refresh access token:", refreshErr);
+                return reply.status(401).send({ error: "Failed to refresh access token" });
+            }
         }
-
-        const token = authHeader.split(" ")[1];
-        const dbx = new Dropbox({ accessToken: token, fetch });
 
         try {
             const listRes = await dbx.filesListFolder({ path: "" });
@@ -98,9 +133,12 @@ async function dropboxRoutes(fastify, opts) {
                 })
             );
 
-            reply.send(filesWithPreview);
+            reply.send({
+                accessToken, // gửi lại accessToken nếu nó được refresh
+                files: filesWithPreview
+            });
         } catch (err) {
-            console.error(err);
+            console.error("Lỗi khi lấy danh sách file:", err);
             reply.status(500).send({ error: "Failed to fetch files" });
         }
     });
