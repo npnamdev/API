@@ -81,7 +81,8 @@ async function dropboxRoutes(fastify, opts) {
     });
 
     fastify.post('/dropbox/refresh-token', async (req, reply) => {
-        const refreshToken = req.cookies.dropbox_refresh_token;
+        const refreshToken = "u2hLbqVaWDYAAAAAAAAAAY5X2LXPRhCadR5rdkHkJMAOyRHw3OOwh6ACSB_A_dPl";
+        // const refreshToken = req.cookies.dropbox_refresh_token;
 
         if (!refreshToken) {
             return reply.status(401).send({ error: 'No refresh token provided' });
