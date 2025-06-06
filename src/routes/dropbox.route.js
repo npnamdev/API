@@ -80,86 +80,78 @@ async function dropboxRoutes(fastify, opts) {
         }
     });
 
+    fastify.post('/dropbox/refresh-token', async (req, reply) => {
+        const refreshToken = req.cookies.dropbox_refresh_token;
+
+        if (!refreshToken) {
+            return reply.status(401).send({ error: 'No refresh token provided' });
+        }
+
+        try {
+            const tokens = await refreshAccessToken(refreshToken);
+
+            if (tokens.refreshToken !== refreshToken) {
+                reply.setCookie('dropbox_refresh_token', tokens.refreshToken, {
+                    path: '/',
+                    httpOnly: true,
+                    secure: true,
+                    sameSite: 'None',
+                    domain: '.wedly.info',
+                    maxAge: 60 * 60 * 24 * 30
+                });
+            }
+
+            return reply.send({
+                accessToken: tokens.accessToken,
+                refreshToken: tokens.refreshToken
+            });
+        } catch (error) {
+            console.error('Refresh token failed:', error);
+            return reply.status(401).send({ error: 'Failed to refresh token. Please login again.' });
+        }
+    });
+
     fastify.get("/dropbox/files", async (req, reply) => {
         const authHeader = req.headers.authorization;
-        let refreshToken = req.cookies.dropbox_refresh_token;
 
         if (!authHeader || !authHeader.startsWith("Bearer ")) {
             return reply.status(401).send({ error: "Unauthorized: No token provided" });
         }
 
-        let accessToken = authHeader.split(" ")[1];
-        let dbx = new Dropbox({ accessToken, fetch });
-        let shouldRetry = true;
-        let tokenRefreshed = false;
+        const accessToken = authHeader.split(" ")[1];
+        const dbx = new Dropbox({ accessToken, fetch });
 
-        while (shouldRetry) {
-            try {
-                const listRes = await dbx.filesListFolder({ path: "" });
+        try {
+            const listRes = await dbx.filesListFolder({ path: "" });
 
-                const filesWithPreview = await Promise.all(
-                    listRes.result.entries.map(async (file) => {
-                        let previewUrl = null;
+            const filesWithPreview = await Promise.all(
+                listRes.result.entries.map(async (file) => {
+                    let previewUrl = null;
 
-                        if (file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
-                            try {
-                                const tempLinkRes = await dbx.filesGetTemporaryLink({ path: file.path_lower });
-                                previewUrl = tempLinkRes.result.link;
-                            } catch (e) {
-                                console.error("Không lấy được link preview:", e);
-                            }
+                    if (file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+                        try {
+                            const tempLinkRes = await dbx.filesGetTemporaryLink({ path: file.path_lower });
+                            previewUrl = tempLinkRes.result.link;
+                        } catch (e) {
+                            console.error("Không lấy được link preview:", e);
                         }
-
-                        return {
-                            id: file.id,
-                            name: file.name,
-                            path_lower: file.path_lower,
-                            size: file.size,
-                            client_modified: file.client_modified,
-                            previewUrl,
-                        };
-                    })
-                );
-
-                // Gửi token mới về nếu đã refresh
-                if (tokenRefreshed) {
-                    return reply.send({
-                        accessToken, // Token mới
-                        files: filesWithPreview,
-                    });
-                }
-
-                return reply.send(filesWithPreview);
-            } catch (err) {
-                if (err.status === 401 && refreshToken && shouldRetry) {
-                    try {
-                        const tokens = await refreshAccessToken(refreshToken);
-                        accessToken = tokens.accessToken;
-                        dbx = new Dropbox({ accessToken, fetch });
-
-                        if (tokens.refreshToken !== refreshToken) {
-                            reply.setCookie('dropbox_refresh_token', tokens.refreshToken, {
-                                path: '/',
-                                httpOnly: true,
-                                secure: true,
-                                sameSite: 'None',
-                                domain: '.wedly.info',
-                                maxAge: 60 * 60 * 24 * 30
-                            });
-                            refreshToken = tokens.refreshToken;
-                        }
-
-                        tokenRefreshed = true;
-                        shouldRetry = false;
-                    } catch (refreshError) {
-                        console.error('Refresh token failed:', refreshError);
-                        return reply.status(401).send({ error: "Session expired. Please login again." });
                     }
-                } else {
-                    console.error('Dropbox API error:', err);
-                    return reply.status(500).send({ error: "Failed to fetch files" });
-                }
-            }
+
+                    return {
+                        id: file.id,
+                        name: file.name,
+                        path_lower: file.path_lower,
+                        size: file.size,
+                        client_modified: file.client_modified,
+                        previewUrl,
+                    };
+                })
+            );
+
+            return reply.send(filesWithPreview);
+        } catch (err) {
+            console.error('Dropbox API error:', err);
+            return reply.status(500).send({ error: "Failed to fetch files" });
         }
     });
 }
