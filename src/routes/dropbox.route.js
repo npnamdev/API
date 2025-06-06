@@ -82,7 +82,7 @@ async function dropboxRoutes(fastify, opts) {
 
     fastify.get("/dropbox/files", async (req, reply) => {
         const authHeader = req.headers.authorization;
-        const refreshToken = req.cookies.dropbox_refresh_token;
+        let refreshToken = req.cookies.dropbox_refresh_token;
 
         if (!authHeader || !authHeader.startsWith("Bearer ")) {
             return reply.status(401).send({ error: "Unauthorized: No token provided" });
@@ -91,6 +91,7 @@ async function dropboxRoutes(fastify, opts) {
         let accessToken = authHeader.split(" ")[1];
         let dbx = new Dropbox({ accessToken, fetch });
         let shouldRetry = true;
+        let tokenRefreshed = false;
 
         while (shouldRetry) {
             try {
@@ -120,16 +121,22 @@ async function dropboxRoutes(fastify, opts) {
                     })
                 );
 
+                // Gửi token mới về nếu đã refresh
+                if (tokenRefreshed) {
+                    return reply.send({
+                        accessToken, // Token mới
+                        files: filesWithPreview,
+                    });
+                }
+
                 return reply.send(filesWithPreview);
             } catch (err) {
                 if (err.status === 401 && refreshToken && shouldRetry) {
                     try {
-                        // Refresh token và thử lại
                         const tokens = await refreshAccessToken(refreshToken);
                         accessToken = tokens.accessToken;
                         dbx = new Dropbox({ accessToken, fetch });
 
-                        // Cập nhật refresh token mới nếu có
                         if (tokens.refreshToken !== refreshToken) {
                             reply.setCookie('dropbox_refresh_token', tokens.refreshToken, {
                                 path: '/',
@@ -142,7 +149,8 @@ async function dropboxRoutes(fastify, opts) {
                             refreshToken = tokens.refreshToken;
                         }
 
-                        shouldRetry = false; // Chỉ thử lại 1 lần
+                        tokenRefreshed = true;
+                        shouldRetry = false;
                     } catch (refreshError) {
                         console.error('Refresh token failed:', refreshError);
                         return reply.status(401).send({ error: "Session expired. Please login again." });
