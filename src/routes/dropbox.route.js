@@ -42,7 +42,7 @@ async function dropboxRoutes(fastify, opts) {
                     secure: true,
                     sameSite: 'None',
                     domain: '.wedly.info',
-                    maxAge: 60 * 60 * 24 * 30, // 30 days
+                    maxAge: 60 * 60 * 24 * 30,
                 })
                 .type('text/html')
                 .send(`
@@ -107,14 +107,13 @@ async function dropboxRoutes(fastify, opts) {
 
             return reply.send(filesWithPreview);
         } catch (err) {
-            console.error('Dropbox API error:', err);
-            return reply.status(500).send({ error: "Failed to fetch files" });
+            console.error("Dropbox API error:", err);
+            return reply.status(500).send({ error: "Failed to fetch files from Dropbox" });
         }
     });
 
     fastify.post('/dropbox/refresh-token', async (req, reply) => {
         const refreshToken = req.cookies?.dropbox_refresh_token;
-        // const refreshToken = "BB4itN7O01IAAAAAAAAAAWDr4pkoJ21M32-s8kaIdT33VtPJrY9MuwwLATGCUkDh";
 
         if (!refreshToken) {
             return reply.status(401).send({ error: 'No refresh token provided' });
