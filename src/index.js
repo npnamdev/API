@@ -58,11 +58,16 @@ fastify.register(require('./routes/activation.route'), { prefix: process.env.API
 
 fastify.get('/', async (req, reply) => {
   if (req.session.user) {
-    return reply.send(`Xin chào ${req.session.user.name}!`);
+    // Hiển thị email của người dùng
+    return reply.type('text/html').send(`
+      <h1>Xin chào ${req.session.user.name}!</h1>
+      <p>Email của bạn: ${req.session.user.email}</p>
+      <a href="/logout">Đăng xuất</a>
+    `);
   }
+  // Nếu chưa đăng nhập, hiển thị link đăng nhập
   reply.type('text/html').send('<a href="/login/google">Đăng nhập với Google</a>');
 });
-
 
 
 // // Route xử lý callback từ Google
