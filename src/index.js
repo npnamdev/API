@@ -10,7 +10,7 @@ fastify.register(require("@fastify/static"), { root: require("path").join(__dirn
 fastify.register(require('@fastify/cookie'));
 fastify.register(require('@fastify/session'), {
   secret: 'a-secret-with-minimum-length-of-32-characters',
-  cookie: { secure: true }, 
+  cookie: { secure: true },
   saveUninitialized: false,
 });
 fastify.register(require('@fastify/oauth2'), {
@@ -24,12 +24,13 @@ fastify.register(require('@fastify/oauth2'), {
     auth: require('@fastify/oauth2').GOOGLE_CONFIGURATION,
   },
   startRedirectPath: '/login/google',
-  callbackUri: `${process.env.APP_URL || 'http://localhost:8081'}/login/google/callback`,
+  callbackUri: `https://api.wedly.info/login/google/callback`,
   callbackUriParams: {
     access_type: 'offline', // Để lấy refreshToken nếu cần
   },
   pkce: 'S256', // Sử dụng PKCE để tăng cường bảo mật
 })
+
 fastify.register(require('@fastify/formbody'));
 fastify.register(require('@fastify/multipart'), { limits: { fileSize: 10 * 1024 * 1024 } });
 fastify.register(require('@fastify/rate-limit'));
