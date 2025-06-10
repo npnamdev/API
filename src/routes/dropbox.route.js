@@ -104,7 +104,7 @@ async function dropboxRoutes(fastify, opts) {
         const dbx = new Dropbox({ accessToken, fetch });
 
         const { cursor, limit } = req.query;
-        const parsedLimit = parseInt(limit) || 10;
+        const parsedLimit = parseInt(limit) || 20;
 
         try {
             const listRes = cursor
