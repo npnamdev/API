@@ -56,44 +56,92 @@ fastify.register(require('./routes/section.route'), { prefix: process.env.API_PR
 fastify.register(require('./routes/dropbox.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/activation.route'), { prefix: process.env.API_PREFIX || '/api' });
 
-fastify.get('/', async (req, reply) => {
-  if (req.session.user) {
-    // Hiển thị email của người dùng
-    return reply.type('text/html').send(`
-      <h1>Xin chào ${req.session.user.name}!</h1>
-      <p>Email của bạn: ${req.session.user.email}</p>
-      <a href="/logout">Đăng xuất</a>
-    `);
-  }
-  // Nếu chưa đăng nhập, hiển thị link đăng nhập
-  reply.type('text/html').send('<a href="/login/google">Đăng nhập với Google</a>');
-});
+// fastify.get('/', async (req, reply) => {
+//   if (req.session.user) {
+//     // Hiển thị email của người dùng
+//     return reply.type('text/html').send(`
+//       <h1>Xin chào ${req.session.user.name}!</h1>
+//       <p>Email của bạn: ${req.session.user.email}</p>
+//       <a href="/logout">Đăng xuất</a>
+//     `);
+//   }
+//   // Nếu chưa đăng nhập, hiển thị link đăng nhập
+//   reply.type('text/html').send('<a href="/login/google">Đăng nhập với Google</a>');
+// });
 
 
-// // Route xử lý callback từ Google
+// // // Route xử lý callback từ Google
+// fastify.get('/login/google/callback', async (req, reply) => {
+//   try {
+//     const { token } = await fastify.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
+
+//     // Lấy thông tin người dùng từ Google API
+//     const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+//       headers: { Authorization: `Bearer ${token.access_token}` },
+//     });
+//     const userInfo = await userInfoResponse.json();
+
+//     // Lưu thông tin người dùng vào session
+//     req.session.user = {
+//       id: userInfo.id,
+//       name: userInfo.name,
+//       email: userInfo.email,
+//     };
+
+//     // Chuyển hướng về trang chính hoặc trang mong muốn
+//     reply.redirect('/');
+//   } catch (error) {
+//     console.error('Google OAuth Error:', error);
+//     reply.code(500).send('Lỗi xác thực Google');
+//   }
+// });
+
+// Route callback từ Google
 fastify.get('/login/google/callback', async (req, reply) => {
   try {
     const { token } = await fastify.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
-
-    // Lấy thông tin người dùng từ Google API
     const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: { Authorization: `Bearer ${token.access_token}` },
     });
     const userInfo = await userInfoResponse.json();
+    console.log('User Info:', userInfo); // Kiểm tra thông tin người dùng
 
-    // Lưu thông tin người dùng vào session
     req.session.user = {
       id: userInfo.id,
       name: userInfo.name,
       email: userInfo.email,
     };
+    console.log('Session User:', req.session.user); // Kiểm tra session
 
-    // Chuyển hướng về trang chính hoặc trang mong muốn
     reply.redirect('/');
   } catch (error) {
     console.error('Google OAuth Error:', error);
     reply.code(500).send('Lỗi xác thực Google');
   }
+});
+
+// Route chính
+fastify.get('/', async (req, reply) => {
+  console.log('Session in /:', req.session.user); // Kiểm tra session
+  if (req.session.user) {
+    return reply.type('text/html').send(`
+      <h1>Xin chào ${req.session.user.name}!</h1>
+      <p>Email: ${req.session.user.email}</p>
+      <a href="/logout">Đăng xuất</a>
+    `);
+  }
+  reply.type('text/html').send('<a href="/login/google">Đăng nhập với Google</a>');
+});
+
+// Route đăng xuất
+fastify.get('/logout', async (req, reply) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Lỗi khi đăng xuất:', err);
+      return reply.code(500).send('Lỗi đăng xuất');
+    }
+    reply.redirect('/');
+  });
 });
 
 
