@@ -16,7 +16,7 @@ async function dropboxRoutes(fastify, opts) {
             null,
             'none',
             false,
-            { force_reapprove: true }
+         { force_reapprove: true, force_reauthentication: true }
         );
         reply.redirect(authUrl);
     });
