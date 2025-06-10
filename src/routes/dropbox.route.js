@@ -15,7 +15,8 @@ async function dropboxRoutes(fastify, opts) {
             'offline',
             null,
             'none',
-            false
+            false,
+            { force_reapprove: true }
         );
         reply.redirect(authUrl);
     });
