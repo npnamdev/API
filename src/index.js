@@ -12,10 +12,11 @@ fastify.register(require('@fastify/session'), {
   secret: 'a-secret-with-minimum-length-of-32-characters',
   cookie: {
     httpOnly: true,
-    secure: true,
-    sameSite: 'lax',
+    secure: true, // Đổi thành false nếu đang dev localhost
+    sameSite: 'none', // Đổi từ 'lax' sang 'none' nếu dùng cross-domain
     path: '/',
-    domain: '.wedly.info',
+    domain: '.wedly.info', // Giữ nguyên nếu đúng domain
+    maxAge: 86400 // Thêm thời gian sống cookie (1 ngày)
   },
   saveUninitialized: false,
 });
@@ -65,19 +66,21 @@ fastify.register(require('./routes/activation.route'), { prefix: process.env.API
 fastify.get('/login/google/callback', async (req, reply) => {
   try {
     const { token } = await fastify.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
-    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+    const userInfo = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: { Authorization: `Bearer ${token.access_token}` },
-    });
-    const userInfo = await userInfoResponse.json();
-    console.log('User Info:', userInfo);
+    }).then(res => res.json());
 
+    // Sửa cách gán session
     req.session.user = {
       id: userInfo.id,
       name: userInfo.name,
-      email: userInfo.email,
+      email: userInfo.email
     };
-    console.log('Session User:', req.session.user);
-
+    
+    // Thêm dòng này để đảm bảo session được lưu
+    await req.session.save();
+    
+    console.log('Session saved:', req.session.user);
     await reply.redirect('/');
   } catch (error) {
     console.error('Google OAuth Error:', error);
