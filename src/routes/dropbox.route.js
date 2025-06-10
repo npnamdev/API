@@ -103,12 +103,13 @@ async function dropboxRoutes(fastify, opts) {
         const accessToken = authHeader.split(" ")[1];
         const dbx = new Dropbox({ accessToken, fetch });
 
-        const { cursor } = req.query;
+        const { cursor, limit } = req.query;
+        const parsedLimit = parseInt(limit) || 10;
 
         try {
             const listRes = cursor
                 ? await dbx.filesListFolderContinue({ cursor })
-                : await dbx.filesListFolder({ path: "" });
+                : await dbx.filesListFolder({ path: "", limit: parsedLimit });
 
             const entries = listRes.result.entries;
 
