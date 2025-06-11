@@ -14,7 +14,7 @@ module.exports = async function (fastify, opts) {
 
       const userInfo = await response.json();
 
-      let user = await User.findOne({ email: userInfo.email });
+      let user = await User.findOne({ email: userInfo.email }).populate('role');
 
       if (!user) {
         const userRole = await Role.findOne({ name: 'user' });
@@ -33,6 +33,9 @@ module.exports = async function (fastify, opts) {
         });
 
         await user.save();
+
+        // Populate sau khi save
+        user = await User.findById(user._id).populate('role');
       }
 
       const accessToken = await reply.jwtSign(
@@ -53,9 +56,6 @@ module.exports = async function (fastify, opts) {
         domain: '.wedly.info',
         maxAge: 7 * 24 * 60 * 60
       });
-
-      console.log("check userInffo google: ", userInfo);
-      console.log("check login callback: ", user);
 
 
       const targetOrigin = process.env.FRONTEND_URL || 'https://wedly.info';
@@ -79,23 +79,6 @@ module.exports = async function (fastify, opts) {
             }
           </script>
       `);
-
-      // return reply
-      //   .type('text/html')
-      //   .send(`
-      //     <script>
-      //       if (window.opener) {
-      //         window.opener.postMessage({
-      //           type: 'GOOGLE_AUTH_SUCCESS',
-      //           accessToken: ${JSON.stringify(accessToken)},
-      //           userInfo: ${JSON.stringify(user)}
-      //         }, "${targetOrigin}");
-      //         window.close();
-      //       } else {
-      //         window.close();
-      //       }
-      //     </script>
-      //   `);
     } catch (err) {
       console.error('Google OAuth Error:', err);
       reply.status(500).send({ error: 'Authentication failed' });
