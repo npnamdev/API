@@ -8,6 +8,7 @@ fastify.register(require('@fastify/cors'), corsOptions);
 fastify.register(require("fastify-socket.io"), { cors: corsOptions });
 fastify.register(require("@fastify/static"), { root: require("path").join(__dirname, "public"), prefix: '/' });
 fastify.register(require('@fastify/cookie'));
+
 fastify.register(require('@fastify/oauth2'), {
   name: 'googleOAuth2',
   scope: ['profile', 'email'],
@@ -38,6 +39,25 @@ fastify.register(require('@fastify/oauth2'), {
   },
   startRedirectPath: '/login/facebook',
   callbackUri: process.env.FACEBOOK_CALLBACK_URI,
+});
+
+fastify.register(require('@fastify/oauth2'), {
+  name: 'githubOAuth2',
+  scope: ['user:email'],
+  credentials: {
+    client: {
+      id: process.env.GITHUB_CLIENT_ID,
+      secret: process.env.GITHUB_CLIENT_SECRET,
+    },
+    auth: {
+      authorizeHost: 'https://github.com',
+      authorizePath: '/login/oauth/authorize',
+      tokenHost: 'https://github.com',
+      tokenPath: '/login/oauth/access_token',
+    },
+  },
+  startRedirectPath: '/login/github',
+  callbackUri: 'https://api.wedly.info/login/github/callback',
 });
 
 

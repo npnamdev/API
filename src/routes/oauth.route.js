@@ -85,6 +85,55 @@ module.exports = async function (fastify, opts) {
     }
   });
 
+  fastify.get('/login/github/callback', async (req, reply) => {
+    try {
+      const { token } = await fastify.githubOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
+      if (!token?.access_token) throw new Error('Failed to retrieve GitHub access token');
+
+      // Gọi API user info từ GitHub
+      const userInfoResponse = await fetch('https://api.github.com/user', {
+        headers: {
+          Authorization: `Bearer ${token.access_token}`,
+          'User-Agent': 'Fastify-App'
+        },
+      });
+
+      const userInfo = await userInfoResponse.json();
+
+      if (!userInfo || !userInfo.id) throw new Error('Failed to fetch user info');
+
+      console.log('GitHub user info:', userInfo);
+
+      const targetOrigin = process.env.FRONTEND_URL || 'https://wedly.info';
+
+      return reply
+        .type('text/html')
+        .send(`
+        <script>
+          try {
+            if (window.opener && typeof window.opener.postMessage === 'function') {
+              window.opener.postMessage({
+                type: 'GITHUB_AUTH_SUCCESS',
+            
+              }, "${targetOrigin}");
+              window.close();
+            } else {
+              console.error('No window.opener available');
+              window.close();
+            }
+          } catch (error) {
+            console.error('Error in postMessage:', error);
+            window.close();
+          }
+        </script>
+      `);
+    } catch (err) {
+      console.error('GitHub OAuth Error:', err.message);
+      reply.code(500).send({ error: 'GitHub authentication failed' });
+    }
+  });
+
+
   fastify.get('/login/facebook/callback', async function (request, reply) {
     const token = await this.facebookOAuth2.getAccessTokenFromAuthorizationCodeFlow(request);
     // Lấy thông tin user từ Facebook
@@ -101,7 +150,6 @@ module.exports = async function (fastify, opts) {
 
     return reply.send({ user: userInfo });
   });
-
 
 
   // fastify.get('/login/facebook/callback', async (req, reply) => {
