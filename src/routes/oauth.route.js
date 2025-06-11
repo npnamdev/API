@@ -88,50 +88,146 @@ module.exports = async function (fastify, opts) {
   fastify.get('/login/github/callback', async (req, reply) => {
     try {
       const { token } = await fastify.githubOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
-      if (!token?.access_token) throw new Error('Failed to retrieve GitHub access token');
+      if (!token?.access_token) throw new Error('No access token');
 
-      // Gọi API user info từ GitHub
-      const userInfoResponse = await fetch('https://api.github.com/user', {
-        headers: {
-          Authorization: `Bearer ${token.access_token}`,
-          'User-Agent': 'Fastify-App'
-        },
+      // Lấy thông tin user từ GitHub API
+      const response = await fetch('https://api.github.com/user', {
+        headers: { Authorization: `Bearer ${token.access_token}` },
+      });
+      if (!response.ok) throw new Error('User info fetch failed');
+
+      const githubUser = await response.json();
+
+      // Lấy thêm email nếu không có trong response chính
+      let email = githubUser.email;
+      if (!email) {
+        const emailRes = await fetch('https://api.github.com/user/emails', {
+          headers: { Authorization: `Bearer ${token.access_token}` },
+        });
+        if (emailRes.ok) {
+          const emails = await emailRes.json();
+          const primaryEmail = emails.find(e => e.primary && e.verified);
+          email = primaryEmail?.email || emails[0]?.email;
+        }
+      }
+
+      if (!email) throw new Error('Email not found');
+
+      let user = await User.findOne({ email }).populate('role');
+
+      if (!user) {
+        const userRole = await Role.findOne({ name: 'user' });
+        if (!userRole) {
+          return reply.code(500).send({ message: 'Default role not found' });
+        }
+
+        user = new User({
+          username: githubUser.login,
+          email,
+          password: Math.random().toString(36).slice(-8),
+          fullName: githubUser.name || githubUser.login,
+          role: userRole._id,
+          isVerified: true,
+          avatarUrl: githubUser.avatar_url
+        });
+
+        await user.save();
+        user = await User.findById(user._id).populate('role');
+      }
+
+      const accessToken = await reply.jwtSign(
+        { id: user._id },
+        { expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || '15m' }
+      );
+
+      const refreshToken = await reply.jwtSign(
+        { id: user._id },
+        { expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '7d' }
+      );
+
+      reply.setCookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None',
+        path: '/',
+        domain: '.wedly.info',
+        maxAge: 7 * 24 * 60 * 60
       });
 
-      const userInfo = await userInfoResponse.json();
-
-      if (!userInfo || !userInfo.id) throw new Error('Failed to fetch user info');
-
-      console.log('GitHub user info:', userInfo);
-
       const targetOrigin = process.env.FRONTEND_URL || 'https://wedly.info';
-
       return reply
         .type('text/html')
         .send(`
-        <script>
-          try {
-            if (window.opener && typeof window.opener.postMessage === 'function') {
+          <script>
+            if (window.opener) {
+              const accessToken = ${JSON.stringify(accessToken)};
+              const userInfo = JSON.parse(decodeURIComponent("${encodeURIComponent(JSON.stringify(user))}"));
+
               window.opener.postMessage({
                 type: 'GITHUB_AUTH_SUCCESS',
-            
+                accessToken,
+                userInfo
               }, "${targetOrigin}");
+              
               window.close();
             } else {
-              console.error('No window.opener available');
               window.close();
             }
-          } catch (error) {
-            console.error('Error in postMessage:', error);
-            window.close();
-          }
-        </script>
+          </script>
       `);
     } catch (err) {
-      console.error('GitHub OAuth Error:', err.message);
-      reply.code(500).send({ error: 'GitHub authentication failed' });
+      console.error('GitHub OAuth Error:', err);
+      reply.status(500).send({ error: 'Authentication failed' });
     }
-  });
+  })
+
+  // fastify.get('/login/github/callback', async (req, reply) => {
+  //   try {
+  //     const { token } = await fastify.githubOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
+  //     if (!token?.access_token) throw new Error('Failed to retrieve GitHub access token');
+
+  //     // Gọi API user info từ GitHub
+  //     const userInfoResponse = await fetch('https://api.github.com/user', {
+  //       headers: {
+  //         Authorization: `Bearer ${token.access_token}`,
+  //         'User-Agent': 'Fastify-App'
+  //       },
+  //     });
+
+  //     const userInfo = await userInfoResponse.json();
+
+  //     if (!userInfo || !userInfo.id) throw new Error('Failed to fetch user info');
+
+  //     console.log('GitHub user info:', userInfo);
+
+  //     const targetOrigin = process.env.FRONTEND_URL || 'https://wedly.info';
+
+  //     return reply
+  //       .type('text/html')
+  //       .send(`
+  //       <script>
+  //         try {
+  //           if (window.opener && typeof window.opener.postMessage === 'function') {
+  //             window.opener.postMessage({
+  //               type: 'GITHUB_AUTH_SUCCESS',
+
+  //             }, "${targetOrigin}");
+  //             window.close();
+  //           } else {
+  //             console.error('No window.opener available');
+  //             window.close();
+  //           }
+  //         } catch (error) {
+  //           console.error('Error in postMessage:', error);
+  //           window.close();
+  //         }
+  //       </script>
+  //     `);
+  //   } catch (err) {
+  //     console.error('GitHub OAuth Error:', err.message);
+  //     reply.code(500).send({ error: 'GitHub authentication failed' });
+  //   }
+  // });
 
 
   fastify.get('/login/facebook/callback', async function (request, reply) {
