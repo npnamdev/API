@@ -8,19 +8,6 @@ fastify.register(require('@fastify/cors'), corsOptions);
 fastify.register(require("fastify-socket.io"), { cors: corsOptions });
 fastify.register(require("@fastify/static"), { root: require("path").join(__dirname, "public"), prefix: '/' });
 fastify.register(require('@fastify/cookie'));
-// fastify.register(require('@fastify/session'), {
-//   secret: 'a-secret-with-minimum-length-of-32-characters',
-//   cookie: {
-//     httpOnly: true,
-//     secure: true, // Đổi thành false nếu đang dev localhost
-//     sameSite: 'none', // Đổi từ 'lax' sang 'none' nếu dùng cross-domain
-//     path: '/',
-//     domain: '.wedly.info', // Giữ nguyên nếu đúng domain
-//     maxAge: 86400 // Thêm thời gian sống cookie (1 ngày)
-//   },
-//   saveUninitialized: false,
-// });
-
 fastify.register(require('@fastify/oauth2'), {
   name: 'googleOAuth2',
   scope: ['profile', 'email'],
@@ -60,47 +47,6 @@ fastify.register(require('./routes/activation.route'), { prefix: process.env.API
 fastify.register(require('./routes/oauth.route'));
 // fastify.register(require('./routes/googleAuth.route'), { prefix: process.env.API_PREFIX || '/api' });
 
-
-
-// fastify.get('/login/google/callback', async (req, reply) => {
-//   try {
-//     const { token } = await fastify.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
-//     if (!token?.access_token) { throw new Error('Failed to retrieve access token'); }
-//     const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-//       headers: { Authorization: `Bearer ${token.access_token}` }
-//     });
-
-//     if (!userInfoResponse.ok) { throw new Error(`Failed to fetch user info: ${userInfoResponse.statusText}`); }
-
-//     const userInfo = await userInfoResponse.json();
-//     console.log("check userInfo", userInfo);
-
-//     const targetOrigin = process.env.FRONTEND_URL || 'https://wedly.info';
-//     return reply
-//       .type('text/html')
-//       .send(`
-//         <script>
-//           try {
-//             if (window.opener && typeof window.opener.postMessage === 'function') {
-//               window.opener.postMessage({
-//                 type: 'GOOGLE_AUTH_SUCCESS',
-//                 // accessToken: "${token.access_token}",
-//                 userInfo: "${userInfo}"
-//               }, "${targetOrigin}");
-//               window.close();
-//             } else {
-//               window.close();
-//             }
-//           } catch (error) {
-//             window.close();
-//           }
-//         </script>
-//       `);
-//   } catch (error) {
-//     console.error('Google OAuth Error:', error.message, error.stack);
-//     reply.status(500).send({ error: 'Google authentication failed' });
-//   }
-// });
 
 fastify.get('/ping', async (request, reply) => { reply.code(200).send('pong') });
 fastify.get('/view', (req, reply) => { return reply.sendFile('view.html'); });
