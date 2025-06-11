@@ -64,7 +64,7 @@ module.exports = async function (fastify, opts) {
               window.opener.postMessage({
                 type: 'GOOGLE_AUTH_SUCCESS',
                 accessToken: ${JSON.stringify(accessToken)},
-                userInfo: ${JSON.stringify(userInfo)}
+                userInfo: ${JSON.stringify(user)}
               }, "${targetOrigin}");
               window.close();
             } else {
