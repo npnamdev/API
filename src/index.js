@@ -20,6 +20,7 @@ fastify.register(require('@fastify/session'), {
   },
   saveUninitialized: false,
 });
+
 fastify.register(require('@fastify/oauth2'), {
   name: 'googleOAuth2',
   scope: ['profile', 'email'],
@@ -66,25 +67,47 @@ fastify.register(require('./routes/activation.route'), { prefix: process.env.API
 fastify.get('/login/google/callback', async (req, reply) => {
   try {
     const { token } = await fastify.googleOAuth2.getAccessTokenFromAuthorizationCodeFlow(req);
-    const userInfo = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-      headers: { Authorization: `Bearer ${token.access_token}` },
-    }).then(res => res.json());
+    if (!token?.access_token) {
+      throw new Error('Failed to retrieve access token');
+    }
 
-    // Sửa cách gán session
-    req.session.user = {
-      id: userInfo.id,
-      name: userInfo.name,
-      email: userInfo.email
-    };
-    
-    // Thêm dòng này để đảm bảo session được lưu
-    await req.session.save();
-    
-    console.log('Session saved:', req.session.user);
-    await reply.redirect('/');
+    // Fetch user info from Google
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${token.access_token}` },
+    });
+
+    if (!userInfoResponse.ok) {
+      throw new Error(`Failed to fetch user info: ${userInfoResponse.statusText}`);
+    }
+
+    const userInfo = await userInfoResponse.json();
+    console.log("check userInfo", userInfo);
+
+    const targetOrigin = process.env.FRONTEND_URL || 'https://wedly.info';
+    return reply
+      .type('text/html')
+      .send(`
+        <script>
+          try {
+            if (window.opener && typeof window.opener.postMessage === 'function') {
+              window.opener.postMessage({
+                type: 'GOOGLE_AUTH_SUCCESS',
+                // accessToken: "${token.access_token}"
+              }, "${targetOrigin}");
+              window.close();
+            } else {
+              console.error('No window.opener available');
+              window.close();
+            }
+          } catch (error) {
+            console.error('Error in postMessage:', error);
+            window.close();
+          }
+        </script>
+      `);
   } catch (error) {
-    console.error('Google OAuth Error:', error);
-    reply.code(500).send('Lỗi xác thực Google');
+    console.error('Google OAuth Error:', error.message, error.stack);
+    reply.status(500).send({ error: 'Google authentication failed' });
   }
 });
 
