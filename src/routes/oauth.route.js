@@ -54,6 +54,10 @@ module.exports = async function (fastify, opts) {
         maxAge: 7 * 24 * 60 * 60
       });
 
+      console.log("check userInffo google: ", userInfo);
+      console.log("check login callback: ", user);
+      
+
       const targetOrigin = process.env.FRONTEND_URL || 'https://wedly.info';
 
       return reply
