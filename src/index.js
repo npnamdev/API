@@ -21,6 +21,29 @@ fastify.register(require('@fastify/oauth2'), {
   pkce: 'S256',
 })
 
+fastify.register(require('@fastify/oauth2'), {
+  name: 'facebookOAuth2',
+  scope: ['email', 'public_profile'],
+  credentials: {
+    client: {
+      id: process.env.FACEBOOK_CLIENT_ID,
+      secret: process.env.FACEBOOK_CLIENT_SECRET
+    },
+    auth: {
+      authorizeHost: 'https://www.facebook.com',
+      authorizePath: '/v18.0/dialog/oauth',
+      tokenHost: 'https://graph.facebook.com',
+      tokenPath: '/v18.0/oauth/access_token',
+    },
+  },
+  startRedirectPath: '/login/facebook',
+  callbackUri: process.env.FACEBOOK_CALLBACK_URI,
+});
+
+
+
+
+
 fastify.register(require('@fastify/formbody'));
 fastify.register(require('@fastify/multipart'), { limits: { fileSize: 10 * 1024 * 1024 } });
 fastify.register(require('@fastify/rate-limit'));
