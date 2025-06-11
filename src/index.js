@@ -35,6 +35,7 @@ fastify.register(require('@fastify/oauth2'), {
   callbackUri: `https://api.wedly.info/login/google/callback`,
   callbackUriParams: {
     access_type: 'offline',
+    prompt: 'select_account',
   },
   pkce: 'S256',
 })
