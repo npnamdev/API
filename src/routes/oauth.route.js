@@ -56,26 +56,46 @@ module.exports = async function (fastify, opts) {
 
       console.log("check userInffo google: ", userInfo);
       console.log("check login callback: ", user);
-      
+
 
       const targetOrigin = process.env.FRONTEND_URL || 'https://wedly.info';
-
       return reply
         .type('text/html')
         .send(`
           <script>
             if (window.opener) {
+              const accessToken = ${JSON.stringify(accessToken)};
+              const userInfo = JSON.parse(decodeURIComponent("${encodeURIComponent(JSON.stringify(user))}"));
+
               window.opener.postMessage({
                 type: 'GOOGLE_AUTH_SUCCESS',
-                accessToken: ${accessToken},
-                userInfo: ${user}
+                accessToken,
+                userInfo
               }, "${targetOrigin}");
+              
               window.close();
             } else {
               window.close();
             }
           </script>
-        `);
+      `);
+
+      // return reply
+      //   .type('text/html')
+      //   .send(`
+      //     <script>
+      //       if (window.opener) {
+      //         window.opener.postMessage({
+      //           type: 'GOOGLE_AUTH_SUCCESS',
+      //           accessToken: ${JSON.stringify(accessToken)},
+      //           userInfo: ${JSON.stringify(user)}
+      //         }, "${targetOrigin}");
+      //         window.close();
+      //       } else {
+      //         window.close();
+      //       }
+      //     </script>
+      //   `);
     } catch (err) {
       console.error('Google OAuth Error:', err);
       reply.status(500).send({ error: 'Authentication failed' });
