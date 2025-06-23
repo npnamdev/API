@@ -34,6 +34,9 @@ exports.getAllUsers = async (request, reply) => {
         const search = request.query.search || '';
         const searchFields = request.query.searchFields || '';
         const timeRange = request.query.timeRange || '';
+        const dateParam = request.query.date || '';
+        const startDateParam = request.query.startDate || '';
+        const endDateParam = request.query.endDate || '';
 
         const skip = (page - 1) * limit;
 
@@ -45,9 +48,11 @@ exports.getAllUsers = async (request, reply) => {
             'search',
             'searchFields',
             'timeRange',
+            'date',
+            'startDate',
+            'endDate',
         ];
 
-        // Khởi tạo điều kiện lọc
         const filterConditions = [];
 
         // Lọc theo các trường còn lại
@@ -60,15 +65,39 @@ exports.getAllUsers = async (request, reply) => {
         // Lọc theo searchFields
         if (search && searchFields) {
             const fields = searchFields.split(',');
-            const searchConditions = fields.map(field => ({
+            const searchConditions = fields.map((field) => ({
                 [field]: { $regex: search, $options: 'i' },
             }));
             filterConditions.push({ $or: searchConditions });
         }
 
-        // Lọc theo thời gian (timeRange) - linh hoạt
-        if (timeRange) {
-            const match = timeRange.match(/^(\d+)([dwm y])$/); // ví dụ: 3d, 1w, 2m, 1y
+        // --- Ưu tiên lọc theo khoảng ngày startDate - endDate ---
+        if (startDateParam && endDateParam) {
+            const startDate = new Date(startDateParam);
+            const endDate = new Date(endDateParam);
+            if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+                // Đặt thời gian bắt đầu và kết thúc trong ngày
+                startDate.setHours(0, 0, 0, 0);
+                endDate.setHours(23, 59, 59, 999);
+                filterConditions.push({
+                    createdAt: { $gte: startDate, $lte: endDate },
+                });
+            }
+        }
+        // Nếu không có khoảng, xét đến 1 ngày cụ thể
+        else if (dateParam) {
+            const date = new Date(dateParam);
+            if (!isNaN(date.getTime())) {
+                const startOfDay = new Date(date.setHours(0, 0, 0, 0));
+                const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+                filterConditions.push({
+                    createdAt: { $gte: startOfDay, $lte: endOfDay },
+                });
+            }
+        }
+        // Nếu không có cả date và start/end, xét timeRange
+        else if (timeRange) {
+            const match = timeRange.match(/^(\d+)([dwm y])$/);
             if (match) {
                 const value = parseInt(match[1]);
                 const unit = match[2];
@@ -94,9 +123,9 @@ exports.getAllUsers = async (request, reply) => {
             }
         }
 
-        const finalFilter = filterConditions.length > 0 ? { $and: filterConditions } : {};
+        const finalFilter =
+            filterConditions.length > 0 ? { $and: filterConditions } : {};
 
-        // Truy vấn database
         const totalUsers = await User.countDocuments(finalFilter);
         const users = await User.find(finalFilter)
             .select('-password')
@@ -105,7 +134,6 @@ exports.getAllUsers = async (request, reply) => {
             .sort({ [sortBy]: sortOrder })
             .populate({ path: 'role', select: 'label' });
 
-        // Trả kết quả
         return reply.send({
             success: true,
             data: users,
@@ -116,10 +144,12 @@ exports.getAllUsers = async (request, reply) => {
                 totalPages: Math.ceil(totalUsers / limit),
             },
         });
-
     } catch (error) {
         console.error(error);
-        return reply.status(500).send({ success: false, message: 'Server Error' });
+        return reply.status(500).send({
+            success: false,
+            message: 'Server Error',
+        });
     }
 };
 
