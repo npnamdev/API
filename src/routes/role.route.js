@@ -3,7 +3,7 @@ const { checkPermission } = require('../middlewares/authorization');
 
 async function roleRoutes(fastify) {
     fastify.post('/roles', { preHandler: [fastify.authenticate, checkPermission('CREATE_ROLE')] }, roleController.createRole);
-    fastify.get('/roles', { preHandler: [fastify.authenticate, checkPermission('READ_ROLE')] }, roleController.getAllRoles);
+    fastify.get('/roles',  roleController.getAllRoles);
     fastify.get('/roles/:id', { preHandler: [fastify.authenticate, checkPermission('READ_ROLE')] }, roleController.getRoleById);
     fastify.get('/roles/:id/permissions', { preHandler: [fastify.authenticate, checkPermission('READ_ROLE')] }, roleController.getPermissionsOfRole);
     fastify.put('/roles/:id', { preHandler: [fastify.authenticate, checkPermission('UPDATE_ROLE')] }, roleController.updateRoleById);

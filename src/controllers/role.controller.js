@@ -1,5 +1,6 @@
 const Role = require('../models/role.model');
 const Permission = require('../models/permission.model');
+const User = require('../models/user.model');
 
 exports.createRole = async (request, reply) => {
     try {
@@ -33,11 +34,7 @@ exports.getAllRoles = async (request, reply) => {
         const pageNumber = Math.max(1, parseInt(page));
         const pageSize = Math.max(1, parseInt(limit));
         const skip = (pageNumber - 1) * pageSize;
-
-        const searchQuery = search
-            ? { name: { $regex: search, $options: 'i' } }
-            : {};
-
+        const searchQuery = search ? { name: { $regex: search, $options: 'i' } } : {};
         const sortOrder = sort === 'asc' ? 1 : -1;
 
         const roles = await Role.find(searchQuery)
@@ -46,13 +43,23 @@ exports.getAllRoles = async (request, reply) => {
             .sort({ createdAt: sortOrder })
             .populate('permissions', 'name');
 
+        const rolesWithUserCount = await Promise.all(
+            roles.map(async (role) => {
+                const userCount = await User.countDocuments({ role: role._id });
+                return {
+                    ...role.toObject(),
+                    userCount,
+                };
+            })
+        );
+
         const totalRoles = await Role.countDocuments(searchQuery);
         const totalPages = Math.ceil(totalRoles / pageSize);
 
         reply.send({
             status: 'success',
             message: 'Roles retrieved successfully',
-            data: roles,
+            data: rolesWithUserCount,
             pagination: {
                 currentPage: pageNumber,
                 totalPages,
@@ -67,6 +74,7 @@ exports.getAllRoles = async (request, reply) => {
         });
     }
 };
+
 
 exports.getRoleById = async (request, reply) => {
     const { id } = request.params;
