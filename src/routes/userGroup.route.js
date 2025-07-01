@@ -6,6 +6,11 @@ async function userGroupRoutes(fastify, options) {
   fastify.post('/user-groups', userGroupController.createUserGroup);
   fastify.put('/user-groups/:id', userGroupController.updateUserGroup);
   fastify.delete('/user-groups/:id', userGroupController.deleteUserGroup);
+
+  // Thêm vào routes file
+  fastify.post('/user-groups/:groupId/add-user', userGroupController.addUserToGroup);
+  fastify.post('/user-groups/:groupId/remove-user', userGroupController.removeUserFromGroup);
+
 }
 
 module.exports = userGroupRoutes;

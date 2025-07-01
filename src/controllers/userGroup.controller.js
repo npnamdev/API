@@ -92,3 +92,52 @@ exports.deleteUserGroup = async (req, reply) => {
     reply.code(500).send({ error: 'Server error' });
   }
 };
+
+
+// Thêm người dùng vào nhóm
+exports.addUserToGroup = async (req, reply) => {
+  try {
+    const { groupId } = req.params;
+    const { userId } = req.body;
+
+    const group = await UserGroup.findById(groupId);
+    if (!group) return reply.code(404).send({ error: 'UserGroup not found' });
+
+    // Tránh thêm trùng người dùng
+    if (!group.students.includes(userId)) {
+      group.students.push(userId);
+      await group.save();
+    }
+
+    reply.send({
+      status: 'success',
+      message: 'User added to group successfully',
+      data: group
+    });
+  } catch (error) {
+    reply.code(500).send({ error: error.message || 'Server error' });
+  }
+};
+
+// Xoá người dùng khỏi nhóm
+exports.removeUserFromGroup = async (req, reply) => {
+  try {
+    const { groupId } = req.params;
+    const { userId } = req.body;
+
+    const group = await UserGroup.findById(groupId);
+    if (!group) return reply.code(404).send({ error: 'UserGroup not found' });
+
+    group.students = group.students.filter(id => id.toString() !== userId);
+    await group.save();
+
+    reply.send({
+      status: 'success',
+      message: 'User removed from group successfully',
+      data: group
+    });
+  } catch (error) {
+    reply.code(500).send({ error: error.message || 'Server error' });
+  }
+};
+
