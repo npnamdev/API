@@ -11,30 +11,37 @@ exports.getAllLessons = async (req, reply) => {
     }
 };
 
-exports.createLesson = async (req, res) => {
+exports.createLesson = async (request, reply) => {
     try {
-        const { title, type, videoUrl } = req.body;
+        const { title, type, videoUrl, chapterId, order } = request.body;
+
+        if (!chapterId) {
+            return reply.code(400).send({ message: 'chapterId is required' });
+        }
 
         let duration = null;
 
         if (type === 'youtube') {
-            duration = await getYoutubeDuration(videoUrl); // gọi API luôn
+            duration = await getYoutubeDuration(videoUrl); 
         }
 
         const lesson = new Lesson({
             title,
             type,
             videoUrl,
-            duration, // lưu duration vào DB
+            duration,
+            chapterId,
+            order
         });
 
         await lesson.save();
 
-        res.code(201).send(lesson);
+        reply.code(201).send(lesson);
     } catch (err) {
-        res.code(500).send({ message: err.message });
+        reply.code(500).send({ message: err.message });
     }
 };
+
 
 // Lấy bài học theo ID
 exports.getLessonById = async (req, reply) => {
