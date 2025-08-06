@@ -1,4 +1,5 @@
 const Lesson = require('../models/lesson.model');
+const getYoutubeDuration = require('../utils/youtobe');
 
 // Lấy danh sách tất cả bài học
 exports.getAllLessons = async (req, reply) => {
@@ -8,18 +9,31 @@ exports.getAllLessons = async (req, reply) => {
     } catch (error) {
         reply.code(500).send({ error: 'Server error' });
     }
-    // try {
-    //     const { chapterId } = req.query;  // hoặc req.params nếu bạn dùng param đường dẫn
+};
 
-    //     if (!chapterId) {
-    //         return reply.code(400).send({ error: 'chapterId is required' });
-    //     }
+exports.createLesson = async (req, res) => {
+    try {
+        const { title, type, videoUrl } = req.body;
 
-    //     const lessons = await Lesson.find({ chapterId });
-    //     reply.send(lessons);
-    // } catch (error) {
-    //     reply.code(500).send({ error: 'Server error' });
-    // }
+        let duration = null;
+
+        if (type === 'youtube') {
+            duration = await getYoutubeDuration(videoUrl); // gọi API luôn
+        }
+
+        const lesson = new Lesson({
+            title,
+            type,
+            videoUrl,
+            duration, // lưu duration vào DB
+        });
+
+        await lesson.save();
+
+        res.code(201).send(lesson);
+    } catch (err) {
+        res.code(500).send({ message: err.message });
+    }
 };
 
 // Lấy bài học theo ID
@@ -33,16 +47,7 @@ exports.getLessonById = async (req, reply) => {
     }
 };
 
-// Tạo bài học mới
-exports.createLesson = async (req, reply) => {
-    try {
-        const newLesson = new Lesson(req.body);
-        const savedLesson = await newLesson.save();
-        reply.code(201).send(savedLesson);
-    } catch (error) {
-        reply.code(400).send({ error: error.message });
-    }
-};
+
 
 // Cập nhật bài học
 exports.updateLesson = async (req, reply) => {

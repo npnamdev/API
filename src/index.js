@@ -60,6 +60,7 @@ fastify.register(require('./routes/notification.route'), { prefix: process.env.A
 fastify.register(require('./routes/course.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/lesson.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/category.route'), { prefix: process.env.API_PREFIX || '/api' });
+fastify.register(require('./routes/topic.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/chapter.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/userGroup.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/contact.route'), { prefix: process.env.API_PREFIX || '/api' });
