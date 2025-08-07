@@ -10,9 +10,9 @@ const courseSchema = new mongoose.Schema({
         type: Number, default: 0, min: [0, 'Giảm giá không thể âm'],
         validate: { validator: function (value) { return value <= this.price; }, message: 'Giảm giá không thể lớn hơn giá khóa học' }
     },
-    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category'},
     topics: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Topic' }],
-    instructors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }],
+    instructors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User'}],
     tags: [String],
 
     type: { type: String, enum: ['single', 'combo', 'membership'], default: 'single' },
