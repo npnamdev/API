@@ -2,6 +2,126 @@ const Course = require('../models/course.model');
 const Chapter = require('../models/chapter.model');
 const Lesson = require('../models/lesson.model');
 
+
+exports.getAllCourses = async (request, reply) => {
+    try {
+        const { page = 1, limit = 10, search = '', sort = 'desc' } = request.query;
+        const pageNumber = Math.max(1, parseInt(page));
+        const pageSize = Math.max(1, parseInt(limit));
+        const skip = (pageNumber - 1) * pageSize;
+
+        const searchQuery = search
+            ? { title: { $regex: search, $options: 'i' } }
+            : {};
+
+        const sortOrder = sort === 'asc' ? 1 : -1;
+        const courses = await Course.find(searchQuery)
+            .select('title slug thumbnail price discount description instructors tags')
+            .skip(skip)
+            .limit(pageSize)
+            .sort({ createdAt: sortOrder })
+            .populate('topics')
+            .populate('instructors')
+            .populate('category');
+
+        const totalCourses = await Course.countDocuments(searchQuery);
+        const totalPages = Math.ceil(totalCourses / pageSize);
+
+        reply.send({
+            status: 'success',
+            message: 'Courses retrieved successfully',
+            data: courses,
+            pagination: {
+                currentPage: pageNumber,
+                totalPages,
+                totalCourses,
+                limit: pageSize,
+            },
+        });
+    } catch (error) {
+        reply.code(500).send({
+            status: 'error',
+            message: error.message || 'Server error',
+        });
+    }
+};
+
+exports.getCourseById = async (req, reply) => {
+    try {
+        const course = await Course.findById(req.params.id)
+            .populate('instructors', 'name avatar')
+            .populate('category', 'name')
+            .populate('topics', 'name');
+
+        if (!course) return reply.code(404).send({ error: 'Course not found' });
+
+        const chapters = await Chapter.find({ courseId: course._id })
+            .sort({ order: 1 });
+
+        const chaptersWithLessonCount = await Promise.all(
+            chapters.map(async (chapter) => {
+                const lessons = await Lesson.find({ chapterId: chapter._id })
+                    .sort({ order: 1 })
+                    .select('title');
+
+                return {
+                    _id: chapter._id,
+                    title: chapter.title,
+                    order: chapter.order,
+                    lessonCount: lessons.length,
+                    lessons: lessons.map(lesson => ({
+                        _id: lesson._id,
+                        title: lesson.title,
+                        order: lesson.order
+                    }))
+                };
+            })
+        );
+
+        reply.send({
+            ...course.toObject(),
+            chapters: chaptersWithLessonCount,
+        });
+    } catch (error) {
+        console.error(error);
+        reply.code(500).send({ error: 'Server error' });
+    }
+};
+
+
+exports.createCourse = async (req, reply) => {
+    try {
+        const newCourse = new Course(req.body);
+        const savedCourse = await newCourse.save();
+        reply.code(201).send(savedCourse);
+    } catch (error) {
+        reply.code(400).send({ error: error.message });
+    }
+};
+
+exports.updateCourse = async (req, reply) => {
+    try {
+        const updatedCourse = await Course.findByIdAndUpdate(req.params.id, req.body, {
+            new: true,
+            runValidators: true
+        });
+        if (!updatedCourse) return reply.code(404).send({ error: 'Course not found' });
+        reply.send(updatedCourse);
+    } catch (error) {
+        reply.code(400).send({ error: error.message });
+    }
+};
+
+exports.deleteCourse = async (req, reply) => {
+    try {
+        const deletedCourse = await Course.findByIdAndDelete(req.params.id);
+        if (!deletedCourse) return reply.code(404).send({ error: 'Course not found' });
+        reply.send({ message: 'Course deleted successfully' });
+    } catch (error) {
+        reply.code(500).send({ error: 'Server error' });
+    }
+};
+
 exports.duplicateCourse = async (req, reply) => {
     try {
         const courseId = req.params.id;
@@ -106,57 +226,6 @@ exports.getCourseFullDetail = async (req, reply) => {
     }
 };
 
-exports.getAllCourses = async (request, reply) => {
-    try {
-        const { page = 1, limit = 10, search = '', sort = 'desc' } = request.query;
-        const pageNumber = Math.max(1, parseInt(page));
-        const pageSize = Math.max(1, parseInt(limit));
-        const skip = (pageNumber - 1) * pageSize;
-
-        const searchQuery = search
-            ? { title: { $regex: search, $options: 'i' } }
-            : {};
-
-        const sortOrder = sort === 'asc' ? 1 : -1;
-        const courses = await Course.find(searchQuery)
-            .skip(skip)
-            .limit(pageSize)
-            .sort({ createdAt: sortOrder })
-            .populate('instructors')
-            .populate('category');
-
-        const totalCourses = await Course.countDocuments(searchQuery);
-        const totalPages = Math.ceil(totalCourses / pageSize);
-
-        reply.send({
-            status: 'success',
-            message: 'Courses retrieved successfully',
-            data: courses,
-            pagination: {
-                currentPage: pageNumber,
-                totalPages,
-                totalCourses,
-                limit: pageSize,
-            },
-        });
-    } catch (error) {
-        reply.code(500).send({
-            status: 'error',
-            message: error.message || 'Server error',
-        });
-    }
-};
-
-exports.createCourse = async (req, reply) => {
-    try {
-        const newCourse = new Course(req.body);
-        const savedCourse = await newCourse.save();
-        reply.code(201).send(savedCourse);
-    } catch (error) {
-        reply.code(400).send({ error: error.message });
-    }
-};
-
 exports.createManyCourses = async (req, reply) => {
     try {
         const courses = req.body;
@@ -172,41 +241,4 @@ exports.createManyCourses = async (req, reply) => {
     }
 };
 
-exports.getCourseById = async (req, reply) => {
-    try {
-        const course = await Course.findById(req.params.id)
-            .populate('instructors')
-            .populate('category');
-
-        if (!course) return reply.code(404).send({ error: 'Course not found' });
-
-        reply.send(course);
-    } catch (error) {
-        console.error(error);
-        reply.code(500).send({ error: 'Server error' });
-    }
-};
-
-exports.updateCourse = async (req, reply) => {
-    try {
-        const updatedCourse = await Course.findByIdAndUpdate(req.params.id, req.body, {
-            new: true,
-            runValidators: true
-        });
-        if (!updatedCourse) return reply.code(404).send({ error: 'Course not found' });
-        reply.send(updatedCourse);
-    } catch (error) {
-        reply.code(400).send({ error: error.message });
-    }
-};
-
-exports.deleteCourse = async (req, reply) => {
-    try {
-        const deletedCourse = await Course.findByIdAndDelete(req.params.id);
-        if (!deletedCourse) return reply.code(404).send({ error: 'Course not found' });
-        reply.send({ message: 'Course deleted successfully' });
-    } catch (error) {
-        reply.code(500).send({ error: 'Server error' });
-    }
-};
 
