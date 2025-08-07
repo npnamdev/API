@@ -1,41 +1,35 @@
-const LessonProgress = require('../models/lessonProgress.model');
+import UserProgress from '../models/lessonProgress.model.js';
 
-// Đánh dấu bài học là đã hoàn thành
-exports.markLessonAsCompleted = async (req, res) => {
+
+export const upsertUserProgress = async (req, res) => {
   try {
-    const { userId, lessonId } = req.body;
+    const { userId, lessonId, completed = true } = req.body;
 
-    if (!userId || !lessonId) {
-      return res.status(400).json({ message: 'userId và lessonId là bắt buộc.' });
-    }
-
-    // Cập nhật hoặc tạo mới nếu chưa tồn tại
-    const progress = await LessonProgress.findOneAndUpdate(
+    const result = await UserProgress.findOneAndUpdate(
       { userId, lessonId },
-      { isCompleted: true },
+      { completed, updatedAt: new Date() },
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
 
-    res.status(200).json({ message: 'Đã đánh dấu hoàn thành.', data: progress });
-  } catch (error) {
-    console.error('Lỗi khi đánh dấu bài học:', error);
-    res.status(500).json({ message: 'Lỗi máy chủ.', error });
+    return res.code(200).send(result);
+  } catch (err) {
+    return res.code(500).send({ error: err.message });
   }
 };
 
-// Lấy danh sách bài học đã hoàn thành của người dùng
-exports.getCompletedLessonsByUser = async (req, res) => {
+export const getLastLesson = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const completedLessons = await LessonProgress.find({
-      userId,
-      isCompleted: true,
-    }).populate('lessonId');
+    const lastLesson = await UserProgress
+      .findOne({ userId })
+      .sort({ updatedAt: -1 })
+      .populate('lessonId');
 
-    res.status(200).json({ data: completedLessons });
-  } catch (error) {
-    console.error('Lỗi khi lấy danh sách bài học đã hoàn thành:', error);
-    res.status(500).json({ message: 'Lỗi máy chủ.', error });
+    if (!lastLesson) return res.code(404).send({ message: 'No lesson found' });
+
+    return res.send(lastLesson);
+  } catch (err) {
+    return res.code(500).send({ error: err.message });
   }
 };

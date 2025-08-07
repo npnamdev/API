@@ -69,6 +69,10 @@ fastify.register(require('./routes/section.route'), { prefix: process.env.API_PR
 fastify.register(require('./routes/dropbox.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/activation.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/statistic.route'), { prefix: process.env.API_PREFIX || '/api' });
+
+fastify.register(require('./routes/userCourses.route'), { prefix: process.env.API_PREFIX || '/api' });
+
+
 fastify.register(require('./routes/oauth.route'));
 // fastify.register(require('./routes/googleAuth.route'), { prefix: process.env.API_PREFIX || '/api' });
 
