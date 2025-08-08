@@ -77,30 +77,31 @@ const uploadToImageKit = async (req, reply) => {
   }
 };
 
+
 const createMedia = async (req, reply) => {
   try {
     if (!req.isMultipart()) {
-      return reply.status(400).send({ message: 'No file uploaded' });
+      return reply.status(400).send({ message: "No file uploaded" });
     }
 
-    const data = await req.file(); // lấy file từ multipart
-    const fileBuffer = await data.toBuffer(); // lấy nội dung buffer
-    const originalFilename = data.filename || 'file'; // fallback nếu không có tên
+    const data = await req.file();
+    const fileBuffer = await data.toBuffer();
+    const originalFilename = data.filename || "file";
 
-    // Cloudinary upload stream
+    // Cloudinary upload
     const uploadStream = () =>
       new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           {
-            folder: 'uploads',
-            public_id: originalFilename.split('.')[0], // đặt tên file không có đuôi mở rộng
+            folder: "uploads",
+            public_id: originalFilename, // giữ nguyên cả tên + đuôi
             use_filename: true,
-            unique_filename: false, // giữ tên gốc, không thêm chuỗi ngẫu nhiên
-            resource_type: 'auto', // tự động nhận diện (ảnh, video, v.v.)
+            unique_filename: false,
+            resource_type: "auto", // ảnh → image, svg → raw
           },
           (error, result) => {
-            if (result) resolve(result);
-            else reject(error);
+            if (error) return reject(error);
+            resolve(result);
           }
         );
 
@@ -109,6 +110,7 @@ const createMedia = async (req, reply) => {
 
     const uploadResult = await uploadStream();
 
+    // Lưu DB
     const newMedia = new Media({
       url: uploadResult.url,
       secure_url: uploadResult.secure_url,
@@ -119,24 +121,22 @@ const createMedia = async (req, reply) => {
       height: uploadResult.height,
       bytes: uploadResult.bytes,
       original_filename: originalFilename,
-
       duration: uploadResult.duration,
       frame_rate: uploadResult.frame_rate,
       bit_rate: uploadResult.bit_rate,
-
       audio: uploadResult.audio || undefined,
       video: uploadResult.video || undefined,
     });
 
-
     await newMedia.save();
 
-    reply.status(201).send(newMedia);
-  } catch (err) {
-    console.error('[createMedia error]', err);
-    reply.status(500).send({ message: 'Error creating media', error: err.message });
+    return reply.status(201).send(newMedia);
+  } catch (error) {
+    console.error(error);
+    return reply.status(500).send({ message: "Upload failed", error });
   }
 };
+
 
 
 const getAllMedia = async (req, reply) => {
