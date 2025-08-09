@@ -1,10 +1,11 @@
 const Item = require('../models/item.model');
 
-
-// Lấy tất cả file/folder theo parentId (null là root)
-export const getItemsByParent = async (req, reply) => {
+// Lấy tất cả file/folder theo parentId (null là root) + phân trang
+async function getItemsByParent(req, reply) {
     try {
-        const parentId = req.query.parentId === 'null' || !req.query.parentId ? null : req.query.parentId;
+        const parentId = req.query.parentId === 'null' || !req.query.parentId
+            ? null
+            : req.query.parentId;
 
         const page = parseInt(req.query.page) > 0 ? parseInt(req.query.page) : 1;
         const limit = parseInt(req.query.limit) > 0 ? parseInt(req.query.limit) : 10;
@@ -12,7 +13,10 @@ export const getItemsByParent = async (req, reply) => {
 
         const [total, items] = await Promise.all([
             Item.countDocuments({ parentId }),
-            Item.find({ parentId }).sort({ order: 1 }).skip(skip).limit(limit)
+            Item.find({ parentId })
+                .sort({ order: 1 })
+                .skip(skip)
+                .limit(limit)
         ]);
 
         const pages = Math.ceil(total / limit);
@@ -21,27 +25,16 @@ export const getItemsByParent = async (req, reply) => {
             items,
             total,
             page,
-            pages,
+            pages
         });
     } catch (err) {
         req.log.error(err);
         return reply.status(500).send({ error: "Server error" });
     }
 }
-// export const getItemsByParent = async (req, reply) => {
-//     try {
-//         const parentId = req.query.parentId === 'null' || !req.query.parentId ? null : req.query.parentId;
-//         const items = await Item.find({ parentId }).sort({ order: 1 });
-//         return reply.send(items);
-//     } catch (err) {
-//         req.log.error(err);
-//         return reply.status(500).send({ error: "Server error" });
-//     }
-// };
-
 
 // Tạo file hoặc folder (dữ liệu JSON fake)
-export const createItem = async (req, reply) => {
+async function createItem(req, reply) {
     try {
         const body = req.body;
 
@@ -55,10 +48,11 @@ export const createItem = async (req, reply) => {
             }
         }
 
-        // Tự động set order = max order trong parent + 1 nếu không truyền order
         let order = body.order;
         if (order == null) {
-            const maxOrderItem = await Item.find({ parentId: body.parentId || null }).sort({ order: -1 }).limit(1);
+            const maxOrderItem = await Item.find({ parentId: body.parentId || null })
+                .sort({ order: -1 })
+                .limit(1);
             order = maxOrderItem.length ? maxOrderItem[0].order + 1 : 0;
         }
 
@@ -79,18 +73,22 @@ export const createItem = async (req, reply) => {
         req.log.error(err);
         return reply.status(500).send({ error: "Server error" });
     }
-};
-
+}
 
 // Cập nhật tên item
-export const updateName = async (req, reply) => {
+async function updateName(req, reply) {
     try {
         const { id } = req.params;
         const { name } = req.body;
-        if (!name) return reply.status(400).send({ error: "name is required" });
+
+        if (!name) {
+            return reply.status(400).send({ error: "name is required" });
+        }
 
         const updated = await Item.findByIdAndUpdate(id, { name }, { new: true });
-        if (!updated) return reply.status(404).send({ error: "Item not found" });
+        if (!updated) {
+            return reply.status(404).send({ error: "Item not found" });
+        }
 
         return reply.send(updated);
 
@@ -98,7 +96,7 @@ export const updateName = async (req, reply) => {
         req.log.error(err);
         return reply.status(500).send({ error: "Server error" });
     }
-};
+}
 
 // Xoá item (file/folder), nếu folder thì xoá đệ quy
 async function deleteRecursive(id) {
@@ -109,11 +107,13 @@ async function deleteRecursive(id) {
     await Item.findByIdAndDelete(id);
 }
 
-export const deleteItem = async (req, reply) => {
+async function deleteItem(req, reply) {
     try {
         const { id } = req.params;
         const item = await Item.findById(id);
-        if (!item) return reply.status(404).send({ error: "Item not found" });
+        if (!item) {
+            return reply.status(404).send({ error: "Item not found" });
+        }
 
         await deleteRecursive(id);
         return reply.send({ success: true });
@@ -122,15 +122,17 @@ export const deleteItem = async (req, reply) => {
         req.log.error(err);
         return reply.status(500).send({ error: "Server error" });
     }
-};
+}
 
 // Di chuyển item (thay đổi parentId và order)
-export const moveItem = async (req, reply) => {
+async function moveItem(req, reply) {
     try {
         const { id } = req.params;
         const { parentId, order } = req.body;
 
-        if (order == null) return reply.status(400).send({ error: "order is required" });
+        if (order == null) {
+            return reply.status(400).send({ error: "order is required" });
+        }
 
         const update = {
             parentId: parentId || null,
@@ -138,7 +140,9 @@ export const moveItem = async (req, reply) => {
         };
 
         const updated = await Item.findByIdAndUpdate(id, update, { new: true });
-        if (!updated) return reply.status(404).send({ error: "Item not found" });
+        if (!updated) {
+            return reply.status(404).send({ error: "Item not found" });
+        }
 
         return reply.send(updated);
 
@@ -146,14 +150,16 @@ export const moveItem = async (req, reply) => {
         req.log.error(err);
         return reply.status(500).send({ error: "Server error" });
     }
-};
+}
 
 // Lấy chi tiết 1 item
-export const getItemById = async (req, reply) => {
+async function getItemById(req, reply) {
     try {
         const { id } = req.params;
         const item = await Item.findById(id);
-        if (!item) return reply.status(404).send({ error: "Item not found" });
+        if (!item) {
+            return reply.status(404).send({ error: "Item not found" });
+        }
 
         return reply.send(item);
 
@@ -161,4 +167,13 @@ export const getItemById = async (req, reply) => {
         req.log.error(err);
         return reply.status(500).send({ error: "Server error" });
     }
+}
+
+module.exports = {
+    getItemsByParent,
+    createItem,
+    updateName,
+    deleteItem,
+    moveItem,
+    getItemById
 };
