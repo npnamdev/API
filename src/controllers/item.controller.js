@@ -134,17 +134,26 @@ async function moveItem(req, reply) {
             return reply.status(400).send({ error: "order is required" });
         }
 
-        const update = {
-            parentId: parentId || null,
-            order
-        };
+        // Lấy tất cả items trong cùng parentId
+        const items = await Item.find({ parentId: parentId || null }).sort({ order: 1 });
 
-        const updated = await Item.findByIdAndUpdate(id, update, { new: true });
-        if (!updated) {
+        // Xác định item được di chuyển
+        const movingItemIndex = items.findIndex(i => i._id.toString() === id);
+        if (movingItemIndex === -1) {
             return reply.status(404).send({ error: "Item not found" });
         }
 
-        return reply.send(updated);
+        // Xóa item khỏi mảng và chèn vào vị trí mới
+        const [movingItem] = items.splice(movingItemIndex, 1);
+        items.splice(order, 0, movingItem);
+
+        // Cập nhật lại order cho tất cả
+        for (let i = 0; i < items.length; i++) {
+            items[i].order = i;
+            await items[i].save();
+        }
+
+        return reply.send({ success: true });
 
     } catch (err) {
         req.log.error(err);
