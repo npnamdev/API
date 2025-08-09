@@ -1,4 +1,4 @@
-import Item from "../models/item.model.js";
+const Item = require('../models/item.model');
 
 
 // Lấy tất cả file/folder theo parentId (null là root)
