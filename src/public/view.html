@@ -6,7 +6,10 @@
   <title>Prism JSON Formatter - Quản lý API</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/themes/prism-okaidia.css" rel="stylesheet" />
+
+  <!-- Theme trắng Prism -->
+  <link href="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/themes/prism.css" rel="stylesheet" />
+
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/prism.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/components/prism-json.min.js"></script>
   <style>
@@ -18,63 +21,55 @@
   </style>
 </head>
 
-<body class="bg-gray-900 text-white min-h-screen flex flex-col">
+<body class="bg-white text-black h-dvh flex flex-col">
   <!-- Header -->
-  <header class="bg-gray-800 shadow-md p-4">
-    <div class="max-w-7xl mx-auto flex justify-between items-center">
-      <h1 class="text-xl font-bold">🔧 JSON Formatter</h1>
-      <span class="text-sm text-gray-400">Hiển thị dữ liệu từ API</span>
+  <header class="bg-white shadow-md p-5 border-b border-gray-300">
+    <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+      <h1 class="text-2xl font-extrabold">🔧 JSON Formatter</h1>
+      <p class="text-gray-600 text-sm sm:text-base">Nhập URL API và xem JSON định dạng đẹp ngay bên dưới</p>
     </div>
   </header>
 
   <!-- Main Content -->
-  <main class="flex-1 p-4">
-    <div class="max-w-7xl mx-auto space-y-4">
-      <!-- API Input -->
-      <div>
-        <label for="apiInput" class="block mb-1 text-sm">🔗 Nhập đường dẫn API:</label>
-        <div class="flex flex-col sm:flex-row gap-2">
-          <input id="apiInput" type="text" placeholder="https://api.example.com/data"
-            class="flex-1 p-2 rounded bg-gray-700 text-white border border-gray-600" />
-          <button onclick="fetchApiData()"
-            class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-500 transition">Tải</button>
-        </div>
-      </div>
+  <main class="flex-1 p-6 max-w-4xl mx-auto w-full flex flex-col">
+    <!-- API Input -->
+    <label for="apiInput" class="mb-2 text-sm font-medium">🔗 Nhập đường dẫn API:</label>
+    <div class="flex gap-3 mb-4 items-center">
+      <input id="apiInput" type="text" placeholder="https://api.example.com/data"
+        class="flex-grow p-3 rounded-md bg-gray-100 border border-gray-300 focus:border-blue-500 focus:outline-none transition text-black placeholder-gray-400" />
+      <button onclick="fetchApiData()"
+        class="px-5 py-3 bg-blue-600 hover:bg-blue-500 rounded-md font-semibold transition select-none text-white">Tải</button>
+    </div>
 
-      <!-- Status -->
-      <div id="status" class="text-sm text-gray-400"></div>
+    <!-- Status -->
+    <p id="status" class="min-h-[24px] text-sm text-gray-600 mb-6"></p>
 
-      <!-- Actions -->
-      <div class="flex gap-2">
-        <button onclick="copyJson()" class="bg-green-600 px-4 py-2 rounded hover:bg-green-500 transition text-sm">📋
-          Copy JSON</button>
-        <button onclick="downloadJson()" class="bg-yellow-600 px-4 py-2 rounded hover:bg-yellow-500 transition text-sm">💾
-          Tải xuống</button>
-        <button onclick="clearJson()" class="bg-red-600 px-4 py-2 rounded hover:bg-red-500 transition text-sm">🧹
-          Xóa</button>
-      </div>
-
-      <!-- JSON Display -->
-      <div class="bg-gray-800 rounded-lg shadow-inner overflow-auto max-h-[70vh] p-4">
-        <pre id="jsonDisplay" class="language-json font-mono text-sm md:text-base whitespace-pre-wrap"></pre>
-      </div>
+    <!-- JSON Display -->
+    <div id="jsonContainer"
+      class="mb-6 overflow-auto max-h-[70vh] rounded-md border border-gray-300 shadow-inner bg-white">
+      <pre id="jsonDisplay" class="language-json whitespace-pre font-mono text-base p-6 text-black"></pre>
     </div>
   </main>
 
   <!-- Footer -->
-  <footer class="bg-gray-800 p-4 text-center text-sm text-gray-500">
+  <footer class="bg-white border-t border-gray-300 p-4 text-center text-sm text-gray-500 select-none">
     &copy; 2025 Prism JSON Formatter. All rights reserved.
   </footer>
 
   <!-- Script -->
   <script>
+    const LS_KEY = 'lastJsonData';
+    const LS_API_KEY = 'lastApiUrl';
+
     async function fetchApiData() {
-      const api = document.getElementById('apiInput').value.trim();
+      const apiInput = document.getElementById('apiInput');
+      const api = apiInput.value.trim();
       const jsonDisplay = document.getElementById('jsonDisplay');
       const status = document.getElementById('status');
 
       if (!api) {
         status.textContent = '❌ Vui lòng nhập đường dẫn API!';
+        jsonDisplay.textContent = '';
         return;
       }
 
@@ -82,10 +77,6 @@
       jsonDisplay.textContent = '';
 
       try {
-        // Thêm proxy nếu cần (bỏ comment nếu bạn dùng)
-        // const proxy = 'https://cors-anywhere.herokuapp.com/';
-        // const response = await fetch(proxy + api);
-
         const response = await fetch(api);
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -97,6 +88,10 @@
           jsonDisplay.textContent = formatted;
           Prism.highlightElement(jsonDisplay);
           status.textContent = '✅ Tải dữ liệu thành công.';
+
+          // Lưu vào localStorage
+          localStorage.setItem(LS_KEY, formatted);
+          localStorage.setItem(LS_API_KEY, api);
         } else {
           throw new Error("Phản hồi không phải JSON!");
         }
@@ -107,38 +102,22 @@
       }
     }
 
-    function copyJson() {
-      const text = document.getElementById('jsonDisplay').textContent;
-      if (!text) return alert("Không có dữ liệu để sao chép!");
-      navigator.clipboard.writeText(text)
-        .then(() => alert("✅ Đã sao chép JSON vào clipboard!"))
-        .catch(() => alert("❌ Không thể sao chép."));
-    }
-
-    function downloadJson() {
-      const text = document.getElementById('jsonDisplay').textContent;
-      if (!text) return alert("Không có dữ liệu để tải!");
-      const blob = new Blob([text], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = "data.json";
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    function clearJson() {
-      document.getElementById('jsonDisplay').textContent = '';
-      document.getElementById('status').textContent = '';
-      document.getElementById('apiInput').value = '';
-    }
-
-    // Auto-load from query string
+    // Load JSON và API từ localStorage khi load trang
     window.onload = function () {
-      const urlApi = new URLSearchParams(window.location.search).get("api");
-      if (urlApi) {
-        document.getElementById("apiInput").value = urlApi;
-        fetchApiData();
+      const savedJson = localStorage.getItem(LS_KEY);
+      const savedApi = localStorage.getItem(LS_API_KEY);
+      const apiInput = document.getElementById('apiInput');
+      const jsonDisplay = document.getElementById('jsonDisplay');
+      const status = document.getElementById('status');
+
+      if (savedApi) {
+        apiInput.value = savedApi;
+      }
+
+      if (savedJson) {
+        jsonDisplay.textContent = savedJson;
+        Prism.highlightElement(jsonDisplay);
+        status.textContent = '💾 Dữ liệu được lưu tạm thời.';
       }
     }
   </script>

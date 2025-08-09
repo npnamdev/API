@@ -72,6 +72,7 @@ fastify.register(require('./routes/statistic.route'), { prefix: process.env.API_
 
 fastify.register(require('./routes/folder.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/file.route'), { prefix: process.env.API_PREFIX || '/api' });
+fastify.register(require('./routes/item.route'), { prefix: process.env.API_PREFIX || '/api' });
 
 
 fastify.register(require('./routes/oauth.route'));
