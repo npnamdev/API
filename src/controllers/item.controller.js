@@ -11,9 +11,8 @@ const createFileAndUploadToCloudinary = async (req, reply) => {
         const data = await req.file();
         const fileBuffer = await data.toBuffer();
         const originalFilename = data.filename || data.fieldname || 'file';
-        const parentId = req.body.parentId || null;
+        const parentId = data.fields?.parentId?.value || null; // ✅ fix
 
-        // Upload lên Cloudinary
         const uploadStream = () =>
             new Promise((resolve, reject) => {
                 const stream = cloudinary.uploader.upload_stream(
@@ -35,14 +34,11 @@ const createFileAndUploadToCloudinary = async (req, reply) => {
 
         const uploadResult = await uploadStream();
 
-        // Xác định fileType
         let fileType = 'document';
         if (uploadResult.resource_type === 'image') fileType = 'image';
         else if (uploadResult.resource_type === 'video') fileType = 'video';
-        else fileType = 'document';
 
-        // Tính order giống createItem
-        let order = req.body.order;
+        let order = req.body?.order;
         if (order == null) {
             const maxOrderItem = await Item.find({ parentId: parentId || null })
                 .sort({ order: -1 })
@@ -50,7 +46,6 @@ const createFileAndUploadToCloudinary = async (req, reply) => {
             order = maxOrderItem.length ? maxOrderItem[0].order + 1 : 0;
         }
 
-        // Lưu DB
         const newItem = new Item({
             name: originalFilename,
             type: 'file',
@@ -68,8 +63,7 @@ const createFileAndUploadToCloudinary = async (req, reply) => {
         console.error(error);
         return reply.status(500).send({ message: 'Upload failed', error });
     }
-}
-
+};
 
 // Lấy tất cả file/folder theo parentId (null là root) + phân trang
 async function getItemsByParent(req, reply) {
