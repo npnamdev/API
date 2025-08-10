@@ -7,6 +7,8 @@ async function itemRoutes(fastify, options) {
     fastify.patch('/items/:id/rename', itemController.updateName);    // Cập nhật tên
     fastify.patch('/items/:id/move', itemController.moveItem);        // Di chuyển item (thay đổi parentId, order)
     fastify.delete('/items/:id', itemController.deleteItem);          // Xoá item (đệ quy nếu folder)
+
+    fastify.post('/items/upload', itemController.createFileAndUploadToCloudinary);
 }
 
 module.exports = itemRoutes;

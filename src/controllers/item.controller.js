@@ -1,4 +1,75 @@
 const Item = require('../models/item.model');
+const cloudinary = require('cloudinary').v2;
+const streamifier = require('streamifier');
+
+const createFileAndUploadToCloudinary = async (req, reply) => {
+    try {
+        if (!req.isMultipart()) {
+            return reply.status(400).send({ message: 'No file uploaded' });
+        }
+
+        const data = await req.file();
+        const fileBuffer = await data.toBuffer();
+        const originalFilename = data.filename || data.fieldname || 'file';
+        const parentId = req.body.parentId || null;
+
+        // Upload lên Cloudinary
+        const uploadStream = () =>
+            new Promise((resolve, reject) => {
+                const stream = cloudinary.uploader.upload_stream(
+                    {
+                        folder: 'demo',
+                        public_id: originalFilename,
+                        use_filename: true,
+                        unique_filename: false,
+                        resource_type: 'auto',
+                    },
+                    (error, result) => {
+                        if (error) return reject(error);
+                        resolve(result);
+                    }
+                );
+
+                streamifier.createReadStream(fileBuffer).pipe(stream);
+            });
+
+        const uploadResult = await uploadStream();
+
+        // Xác định fileType
+        let fileType = 'document';
+        if (uploadResult.resource_type === 'image') fileType = 'image';
+        else if (uploadResult.resource_type === 'video') fileType = 'video';
+        else fileType = 'document';
+
+        // Tính order giống createItem
+        let order = req.body.order;
+        if (order == null) {
+            const maxOrderItem = await Item.find({ parentId: parentId || null })
+                .sort({ order: -1 })
+                .limit(1);
+            order = maxOrderItem.length ? maxOrderItem[0].order + 1 : 0;
+        }
+
+        // Lưu DB
+        const newItem = new Item({
+            name: originalFilename,
+            type: 'file',
+            fileType,
+            url: uploadResult.secure_url,
+            size: uploadResult.bytes,
+            parentId,
+            order
+        });
+
+        await newItem.save();
+
+        return reply.status(201).send(newItem);
+    } catch (error) {
+        console.error(error);
+        return reply.status(500).send({ message: 'Upload failed', error });
+    }
+}
+
 
 // Lấy tất cả file/folder theo parentId (null là root) + phân trang
 async function getItemsByParent(req, reply) {
@@ -184,5 +255,6 @@ module.exports = {
     updateName,
     deleteItem,
     moveItem,
-    getItemById
+    getItemById,
+    createFileAndUploadToCloudinary
 };
