@@ -3,6 +3,7 @@ require('./config/cloudinary.config')();
 const corsOptions = require('./config/cors');
 const fastify = require('fastify')({ logger: false });
 const initializeData = require('./utils/initialSetup');
+const cloudinary = require('cloudinary');
 
 fastify.register(require('@fastify/cors'), corsOptions);
 fastify.register(require("fastify-socket.io"), { cors: corsOptions });
@@ -78,6 +79,34 @@ fastify.register(require('./routes/oauth.route'));
 
 fastify.get('/ping', async (request, reply) => { reply.code(200).send('pong') });
 fastify.get('/view', (req, reply) => { return reply.sendFile('view.html'); });
+
+
+// API lấy dung lượng Cloudinary
+fastify.get('/cloudinary-usage', async (req, reply) => {
+  try {
+    const usage = await cloudinary.v2.api.usage();
+
+    const usedMB = +(usage.storage.usage / (1024 ** 2)).toFixed(2);
+    let limitMB = usage.storage.limit
+      ? +(usage.storage.limit / (1024 ** 2)).toFixed(2)
+      : 25600; // 25GB mặc định cho Free plan
+
+    const remainingMB = +(limitMB - usedMB).toFixed(2);
+
+    return reply.send({
+      total_used_mb: usedMB,
+      total_limit_mb: limitMB,
+      remaining_mb: remainingMB,
+      plan: usage.plan
+    });
+  } catch (error) {
+    console.error('Error fetching Cloudinary usage:', error);
+    return reply.status(500).send({
+      message: 'Failed to fetch Cloudinary usage',
+      error: error.message || error
+    });
+  }
+});
 
 
 (async () => {
