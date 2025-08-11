@@ -46,7 +46,10 @@ fastify.register(require('@fastify/oauth2'), {
 });
 
 fastify.register(require('@fastify/formbody'));
-fastify.register(require('@fastify/multipart'), { limits: { fileSize: 10 * 1024 * 1024 } });
+
+// fastify.register(require('@fastify/multipart'), { limits: { fileSize: 10 * 1024 * 1024 } });
+fastify.register(require('@fastify/multipart'), { limits: { fileSize: 100 * 1024 * 1024 } });
+
 fastify.register(require('@fastify/rate-limit'));
 fastify.register(require('./plugins/sensible'));
 fastify.register(require('./plugins/mongoose'));
