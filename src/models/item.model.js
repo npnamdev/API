@@ -6,6 +6,7 @@ const itemSchema = new mongoose.Schema({
     type: { type: String, enum: ['file', 'folder'], required: true },
     fileType: { type: String, enum: ['image', 'video', 'audio', 'document'] },
     url: { type: String },
+    extension: { type: String },
     size: { type: Number },
     parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Item', default: null },
     order: { type: Number, default: 0 }
