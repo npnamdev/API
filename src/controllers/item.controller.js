@@ -4,7 +4,6 @@ const streamifier = require('streamifier');
 const path = require('path');
 const mime = require('mime-types');
 
-
 const createFileAndUploadToCloudinary = async (req, reply) => {
     try {
         if (!req.isMultipart()) {
@@ -16,6 +15,21 @@ const createFileAndUploadToCloudinary = async (req, reply) => {
         const originalFilename = data.filename || data.fieldname || 'file';
         const parentId = data.fields?.parentId?.value || null;
 
+        // Lấy đuôi file (extension) có dấu chấm, ví dụ ".mp3"
+        const ext = path.extname(originalFilename).toLowerCase();
+
+        // Danh sách đuôi file theo nhóm
+        const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp'];
+        const videoExts = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv'];
+        const audioExts = ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'];
+        const docExts = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt'];
+
+        // Xác định resource_type cho Cloudinary
+        let resourceType = 'raw'; // mặc định
+        if (imageExts.includes(ext)) resourceType = 'image';
+        else if (videoExts.includes(ext) || audioExts.includes(ext)) resourceType = 'video';
+        else resourceType = 'raw';
+
         const uploadStream = () =>
             new Promise((resolve, reject) => {
                 const stream = cloudinary.uploader.upload_stream(
@@ -24,7 +38,7 @@ const createFileAndUploadToCloudinary = async (req, reply) => {
                         public_id: originalFilename,
                         use_filename: true,
                         unique_filename: false,
-                        resource_type: 'auto',
+                        resource_type: resourceType,
                     },
                     (error, result) => {
                         if (error) return reject(error);
@@ -37,22 +51,13 @@ const createFileAndUploadToCloudinary = async (req, reply) => {
 
         const uploadResult = await uploadStream();
 
-        // Lấy đuôi file (extension) có dấu chấm, ví dụ ".jpg"
-        const ext = path.extname(uploadResult.original_filename || originalFilename).toLowerCase();
-
-        // Danh sách đuôi file theo nhóm
-        const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp'];
-        const videoExts = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv'];
-        const audioExts = ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'];
-        const docExts = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt'];
-
+        // Xác định fileType để lưu vào DB
         let fileType = 'other';
         if (imageExts.includes(ext)) fileType = 'image';
         else if (videoExts.includes(ext)) fileType = 'video';
         else if (audioExts.includes(ext)) fileType = 'audio';
         else if (docExts.includes(ext)) fileType = 'document';
 
-        // Nếu vẫn chưa rõ thì kiểm tra mime-type
         if (fileType === 'other') {
             const mimeType = mime.lookup(ext);
             if (mimeType?.startsWith('image/')) fileType = 'image';
@@ -95,6 +100,98 @@ const createFileAndUploadToCloudinary = async (req, reply) => {
         return reply.status(500).send({ message: 'Upload failed', error });
     }
 };
+
+
+// const createFileAndUploadToCloudinary = async (req, reply) => {
+//     try {
+//         if (!req.isMultipart()) {
+//             return reply.status(400).send({ message: 'No file uploaded' });
+//         }
+
+//         const data = await req.file();
+//         const fileBuffer = await data.toBuffer();
+//         const originalFilename = data.filename || data.fieldname || 'file';
+//         const parentId = data.fields?.parentId?.value || null;
+
+//         const uploadStream = () =>
+//             new Promise((resolve, reject) => {
+//                 const stream = cloudinary.uploader.upload_stream(
+//                     {
+//                         folder: 'demo',
+//                         public_id: originalFilename,
+//                         use_filename: true,
+//                         unique_filename: false,
+//                         resource_type: 'auto',
+//                     },
+//                     (error, result) => {
+//                         if (error) return reject(error);
+//                         resolve(result);
+//                     }
+//                 );
+
+//                 streamifier.createReadStream(fileBuffer).pipe(stream);
+//             });
+
+//         const uploadResult = await uploadStream();
+
+//         // Lấy đuôi file (extension) có dấu chấm, ví dụ ".jpg"
+//         const ext = path.extname(uploadResult.original_filename || originalFilename).toLowerCase();
+
+//         // Danh sách đuôi file theo nhóm
+//         const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp'];
+//         const videoExts = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv'];
+//         const audioExts = ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'];
+//         const docExts = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt'];
+
+//         let fileType = 'other';
+//         if (imageExts.includes(ext)) fileType = 'image';
+//         else if (videoExts.includes(ext)) fileType = 'video';
+//         else if (audioExts.includes(ext)) fileType = 'audio';
+//         else if (docExts.includes(ext)) fileType = 'document';
+
+//         // Nếu vẫn chưa rõ thì kiểm tra mime-type
+//         if (fileType === 'other') {
+//             const mimeType = mime.lookup(ext);
+//             if (mimeType?.startsWith('image/')) fileType = 'image';
+//             else if (mimeType?.startsWith('video/')) fileType = 'video';
+//             else if (mimeType?.startsWith('audio/')) fileType = 'audio';
+//             else if (
+//                 mimeType === 'application/pdf' ||
+//                 mimeType?.includes('word') ||
+//                 mimeType?.includes('excel')
+//             ) {
+//                 fileType = 'document';
+//             }
+//         }
+
+//         // Xác định order
+//         let order = req.body?.order;
+//         if (order == null) {
+//             const maxOrderItem = await Item.find({ parentId: parentId || null })
+//                 .sort({ order: -1 })
+//                 .limit(1);
+//             order = maxOrderItem.length ? maxOrderItem[0].order + 1 : 0;
+//         }
+
+//         const newItem = new Item({
+//             name: originalFilename,
+//             type: 'file',
+//             fileType,
+//             extension: ext, // lưu đuôi file
+//             url: uploadResult.secure_url,
+//             size: uploadResult.bytes,
+//             parentId,
+//             order,
+//         });
+
+//         await newItem.save();
+
+//         return reply.status(201).send(newItem);
+//     } catch (error) {
+//         console.error(error);
+//         return reply.status(500).send({ message: 'Upload failed', error });
+//     }
+// };
 
 
 
