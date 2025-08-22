@@ -1,29 +1,52 @@
 const Order = require('../models/order.model');
 const Course = require('../models/course.model');
+const User = require('../models/user.model');
 
-exports.createOrder = async (req, reply) => {
+exports.createOrder = async (req, res) => {
     try {
-        const { courses } = req.body;
+        const { userId, courseIds, paymentMethod } = req.body;
 
-        if (!courses || !Array.isArray(courses) || courses.length === 0) {
-            return reply.code(400).send({ error: 'Courses is required and must be a non-empty array' });
+        // 1. Kiểm tra userId
+        if (!userId) {
+            return res.status(400).json({ message: 'userId is required' });
         }
 
-        const courseDocs = await Course.find({ _id: { $in: courses } });
-        if (!courseDocs.length) return reply.code(400).send({ error: 'Courses not found' });
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
-        const totalPrice = courseDocs.reduce((sum, course) => sum + (course.price || 0), 0);
+        // 2. Kiểm tra courseIds
+        if (!Array.isArray(courseIds) || courseIds.length === 0) {
+            return res.status(400).json({ message: 'courseIds must be a non-empty array' });
+        }
 
-        const order = new Order({
-            ...req.body,
+        // 3. Kiểm tra các khóa học có tồn tại không
+        const courses = await Course.find({ _id: { $in: courseIds } });
+        if (courses.length !== courseIds.length) {
+            return res.status(404).json({ message: 'Some courses not found' });
+        }
+
+        // 4. Tính tổng giá khóa học
+        const totalPrice = courses.reduce((sum, course) => sum + (course.price || 0), 0);
+
+        // 5. Tạo đơn hàng
+        const newOrder = await Order.create({
+            user: userId,
+            courses: courseIds,
+            paymentMethod,
             totalPrice,
+            status: 'pending',
+            isPaid: false
         });
 
-        await order.save();
-
-        reply.code(201).send(order);
+        return res.status(201).json({
+            message: 'Order created successfully',
+            order: newOrder
+        });
     } catch (error) {
-        reply.code(500).send({ error: error.message });
+        console.error('Error creating order:', error);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 };
 
