@@ -101,177 +101,27 @@ const createFileAndUploadToCloudinary = async (req, reply) => {
     }
 };
 
-
-// const createFileAndUploadToCloudinary = async (req, reply) => {
-//     try {
-//         if (!req.isMultipart()) {
-//             return reply.status(400).send({ message: 'No file uploaded' });
-//         }
-
-//         const data = await req.file();
-//         const fileBuffer = await data.toBuffer();
-//         const originalFilename = data.filename || data.fieldname || 'file';
-//         const parentId = data.fields?.parentId?.value || null;
-
-//         const uploadStream = () =>
-//             new Promise((resolve, reject) => {
-//                 const stream = cloudinary.uploader.upload_stream(
-//                     {
-//                         folder: 'demo',
-//                         public_id: originalFilename,
-//                         use_filename: true,
-//                         unique_filename: false,
-//                         resource_type: 'auto',
-//                     },
-//                     (error, result) => {
-//                         if (error) return reject(error);
-//                         resolve(result);
-//                     }
-//                 );
-
-//                 streamifier.createReadStream(fileBuffer).pipe(stream);
-//             });
-
-//         const uploadResult = await uploadStream();
-
-//         // Lấy đuôi file (extension) có dấu chấm, ví dụ ".jpg"
-//         const ext = path.extname(uploadResult.original_filename || originalFilename).toLowerCase();
-
-//         // Danh sách đuôi file theo nhóm
-//         const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp'];
-//         const videoExts = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv'];
-//         const audioExts = ['.mp3', '.wav', '.ogg', '.flac', '.aac', '.m4a'];
-//         const docExts = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt'];
-
-//         let fileType = 'other';
-//         if (imageExts.includes(ext)) fileType = 'image';
-//         else if (videoExts.includes(ext)) fileType = 'video';
-//         else if (audioExts.includes(ext)) fileType = 'audio';
-//         else if (docExts.includes(ext)) fileType = 'document';
-
-//         // Nếu vẫn chưa rõ thì kiểm tra mime-type
-//         if (fileType === 'other') {
-//             const mimeType = mime.lookup(ext);
-//             if (mimeType?.startsWith('image/')) fileType = 'image';
-//             else if (mimeType?.startsWith('video/')) fileType = 'video';
-//             else if (mimeType?.startsWith('audio/')) fileType = 'audio';
-//             else if (
-//                 mimeType === 'application/pdf' ||
-//                 mimeType?.includes('word') ||
-//                 mimeType?.includes('excel')
-//             ) {
-//                 fileType = 'document';
-//             }
-//         }
-
-//         // Xác định order
-//         let order = req.body?.order;
-//         if (order == null) {
-//             const maxOrderItem = await Item.find({ parentId: parentId || null })
-//                 .sort({ order: -1 })
-//                 .limit(1);
-//             order = maxOrderItem.length ? maxOrderItem[0].order + 1 : 0;
-//         }
-
-//         const newItem = new Item({
-//             name: originalFilename,
-//             type: 'file',
-//             fileType,
-//             extension: ext, // lưu đuôi file
-//             url: uploadResult.secure_url,
-//             size: uploadResult.bytes,
-//             parentId,
-//             order,
-//         });
-
-//         await newItem.save();
-
-//         return reply.status(201).send(newItem);
-//     } catch (error) {
-//         console.error(error);
-//         return reply.status(500).send({ message: 'Upload failed', error });
-//     }
-// };
-
-
-
-// const createFileAndUploadToCloudinary = async (req, reply) => {
-//     try {
-//         if (!req.isMultipart()) {
-//             return reply.status(400).send({ message: 'No file uploaded' });
-//         }
-
-//         const data = await req.file();
-//         const fileBuffer = await data.toBuffer();
-//         const originalFilename = data.filename || data.fieldname || 'file';
-//         const parentId = data.fields?.parentId?.value || null; // ✅ fix
-
-//         const uploadStream = () =>
-//             new Promise((resolve, reject) => {
-//                 const stream = cloudinary.uploader.upload_stream(
-//                     {
-//                         folder: 'demo',
-//                         public_id: originalFilename,
-//                         use_filename: true,
-//                         unique_filename: false,
-//                         resource_type: 'auto',
-//                     },
-//                     (error, result) => {
-//                         if (error) return reject(error);
-//                         resolve(result);
-//                     }
-//                 );
-
-//                 streamifier.createReadStream(fileBuffer).pipe(stream);
-//             });
-
-//         const uploadResult = await uploadStream();
-
-//         let fileType = 'document';
-//         if (uploadResult.resource_type === 'image') fileType = 'image';
-//         else if (uploadResult.resource_type === 'video') fileType = 'video';
-
-//         let order = req.body?.order;
-//         if (order == null) {
-//             const maxOrderItem = await Item.find({ parentId: parentId || null })
-//                 .sort({ order: -1 })
-//                 .limit(1);
-//             order = maxOrderItem.length ? maxOrderItem[0].order + 1 : 0;
-//         }
-
-//         const newItem = new Item({
-//             name: originalFilename,
-//             type: 'file',
-//             fileType,
-//             url: uploadResult.secure_url,
-//             size: uploadResult.bytes,
-//             parentId,
-//             order
-//         });
-
-//         await newItem.save();
-
-//         return reply.status(201).send(newItem);
-//     } catch (error) {
-//         console.error(error);
-//         return reply.status(500).send({ message: 'Upload failed', error });
-//     }
-// };
-
-// Lấy tất cả file/folder theo parentId (null là root) + phân trang
 async function getItemsByParent(req, reply) {
     try {
         const parentId = req.query.parentId === 'null' || !req.query.parentId
             ? null
             : req.query.parentId;
 
+        const fileType = req.query.fileType || null; // Lấy fileType từ query nếu có
+
         const page = parseInt(req.query.page) > 0 ? parseInt(req.query.page) : 1;
         const limit = parseInt(req.query.limit) > 0 ? parseInt(req.query.limit) : 10;
         const skip = (page - 1) * limit;
 
+        // Tạo query object
+        const query = { parentId };
+        if (fileType && fileType !== 'all') {
+            query.fileType = fileType; // chỉ lọc khi khác 'all'
+        }
+
         const [total, items] = await Promise.all([
-            Item.countDocuments({ parentId }),
-            Item.find({ parentId })
+            Item.countDocuments(query),
+            Item.find(query)
                 .sort({ order: 1 })
                 .skip(skip)
                 .limit(limit)
@@ -290,6 +140,40 @@ async function getItemsByParent(req, reply) {
         return reply.status(500).send({ error: "Server error" });
     }
 }
+
+
+// // Lấy tất cả file/folder theo parentId (null là root) + phân trang
+// async function getItemsByParent(req, reply) {
+//     try {
+//         const parentId = req.query.parentId === 'null' || !req.query.parentId
+//             ? null
+//             : req.query.parentId;
+
+//         const page = parseInt(req.query.page) > 0 ? parseInt(req.query.page) : 1;
+//         const limit = parseInt(req.query.limit) > 0 ? parseInt(req.query.limit) : 10;
+//         const skip = (page - 1) * limit;
+
+//         const [total, items] = await Promise.all([
+//             Item.countDocuments({ parentId }),
+//             Item.find({ parentId })
+//                 .sort({ order: 1 })
+//                 .skip(skip)
+//                 .limit(limit)
+//         ]);
+
+//         const pages = Math.ceil(total / limit);
+
+//         return reply.send({
+//             items,
+//             total,
+//             page,
+//             pages
+//         });
+//     } catch (err) {
+//         req.log.error(err);
+//         return reply.status(500).send({ error: "Server error" });
+//     }
+// }
 
 // Tạo file hoặc folder (dữ liệu JSON fake)
 async function createItem(req, reply) {
