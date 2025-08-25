@@ -2,29 +2,29 @@ const Order = require('../models/order.model');
 const Course = require('../models/course.model');
 const User = require('../models/user.model');
 
-exports.createOrder = async (req, res) => {
+exports.createOrder = async (req, reply) => {
     try {
         const { userId, courseIds, paymentMethod } = req.body;
 
         // 1. Kiểm tra userId
         if (!userId) {
-            return res.status(400).json({ message: 'userId is required' });
+            return reply.code(400).send({ message: 'userId is required' });
         }
 
         const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            return reply.code(404).send({ message: 'User not found' });
         }
 
         // 2. Kiểm tra courseIds
         if (!Array.isArray(courseIds) || courseIds.length === 0) {
-            return res.status(400).json({ message: 'courseIds must be a non-empty array' });
+            return reply.code(400).send({ message: 'courseIds must be a non-empty array' });
         }
 
         // 3. Kiểm tra các khóa học có tồn tại không
         const courses = await Course.find({ _id: { $in: courseIds } });
         if (courses.length !== courseIds.length) {
-            return res.status(404).json({ message: 'Some courses not found' });
+            return reply.code(404).send({ message: 'Some courses not found' });
         }
 
         // 4. Tính tổng giá khóa học
@@ -40,13 +40,14 @@ exports.createOrder = async (req, res) => {
             isPaid: false
         });
 
-        return res.status(201).json({
+        // ✅ Trả về đúng kiểu Fastify
+        return reply.code(201).send({
             message: 'Order created successfully',
             order: newOrder
         });
     } catch (error) {
         console.error('Error creating order:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        return reply.code(500).send({ message: 'Internal server error' });
     }
 };
 
