@@ -20,7 +20,9 @@ const orderSchema = new mongoose.Schema(
 
 orderSchema.pre('save', function (next) {
     if (!this.orderCode) {
-        this.orderCode = `ORD-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+        const random = Math.floor(100 + Math.random() * 900); // 3 số random
+        const seconds = Math.floor((Date.now() / 1000) % 86400); // số giây trong ngày
+        this.orderCode = `ORD-${seconds}${random}`; 
     }
     next();
 });
