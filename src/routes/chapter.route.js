@@ -8,6 +8,8 @@ async function chapterRoutes(fastify, opts) {
     fastify.put('/chapters/:id', chapterController.updateChapter);
     fastify.delete('/chapters/:id', chapterController.deleteChapter);
     fastify.post('/chapters/:chapterId/lessons', chapterController.createLessonForChapter);
+
+    fastify.get('/courses/:courseId/chapters', chapterController.getChaptersWithLessons);
 }
 
 module.exports = chapterRoutes;

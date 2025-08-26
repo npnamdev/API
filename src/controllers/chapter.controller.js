@@ -1,27 +1,43 @@
 const Chapter = require('../models/chapter.model');
 const Lesson = require('../models/lesson.model');
 
-// Lấy danh sách tất cả chương học theo thứ tự kéo thả
-// exports.getAllChapters = async (req, reply) => {
-//     try {
-//         const chapters = await Chapter.find()
-//             .populate('lessons')
-//             .sort({ order: 1 });
-//         reply.send(chapters);
-//     } catch (error) {
-//         reply.code(500).send({ error: 'Server error' });
-//     }
-// };
+exports.getChaptersWithLessons = async (req, reply) => {
+    try {
+        const { courseId } = req.params;
+
+        // Lấy tất cả chapters theo courseId và sắp xếp theo order
+        const chapters = await Chapter.find({ courseId }).sort({ order: 1 });
+
+        // Gắn lessons cho từng chapter
+        const chaptersWithLessons = await Promise.all(
+            chapters.map(async (chapter) => {
+                const lessons = await Lesson.find({ chapterId: chapter._id })
+                    .sort({ order: 1 })
+                    .select('_id title order'); // chỉ lấy các field cần thiết
+
+                return {
+                    _id: chapter._id,
+                    title: chapter.title,
+                    order: chapter.order,
+                    lessons
+                };
+            })
+        );
+
+        return { chapters: chaptersWithLessons };
+    } catch (err) {
+        console.error(err);
+        return reply.status(500).send({ message: 'Server error' });
+    }
+}
+
 
 // GET /chapters?courseId=xxx
 exports.getAllChapters = async (req, reply) => {
     try {
         const { courseId } = req.query;
-        const filter = courseId ? { courseId } : {};
 
-        const chapters = await Chapter.find(filter)
-            .populate('lessons')
-            .sort({ order: 1 });
+        const chapters = await Chapter.find({ courseId });
 
         reply.send(chapters);
     } catch (error) {
