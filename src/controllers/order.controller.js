@@ -181,7 +181,7 @@ exports.getAllOrders = async (req, reply) => {
         const sortOrder = sort === 'asc' ? 1 : -1;
 
         const orders = await Order.find(filter)
-            .populate('user', 'name email')
+            .populate('user', 'username email')
             .populate('courses', 'title')  // populate courses, lấy trường title
             .skip(skip)
             .limit(Number(limit))
