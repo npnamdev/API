@@ -74,6 +74,7 @@ fastify.register(require('./routes/dropbox.route'), { prefix: process.env.API_PR
 fastify.register(require('./routes/activation.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/statistic.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/item.route'), { prefix: process.env.API_PREFIX || '/api' });
+fastify.register(require('./routes/enrollment.route'), { prefix: process.env.API_PREFIX || '/api' });
 
 
 fastify.register(require('./routes/oauth.route'));

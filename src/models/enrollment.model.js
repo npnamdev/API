@@ -1,8 +1,11 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const enrollmentSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
-}, { timestamps: true });
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
+  enrolledAt: { type: Date, default: Date.now },
+  progress: { type: Number, default: 0 }, // % tiến độ học
+  expiresAt: { type: Date }, // Ngày hết hạn (nếu có)
+});
 
-export default mongoose.model('Enrollment', enrollmentSchema);
+module.exports = mongoose.model('Enrollment', enrollmentSchema);
