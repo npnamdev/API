@@ -130,7 +130,7 @@ exports.getAllOrders = async (req, reply) => {
 exports.getOrderById = async (req, reply) => {
     try {
         const order = await Order.findById(req.params.id)
-            .populate('user', 'name email')
+            .populate('user', 'fullName email')
             .populate('courses', 'title');
         if (!order) return reply.code(404).send({ error: 'Order not found' });
         reply.send(order);
