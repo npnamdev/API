@@ -1,6 +1,8 @@
-import { upsertLessonProgress, getLastLessonProgress } from '../controllers/lessonProgress.controller';
+const { upsertLessonProgress, getLastLessonProgress } = require('../controllers/lessonProgress.controller');
 
-export default async function lessonProgressRoutes(fastify, opts) {
-    fastify.post('/lesson-progress', upsertLessonProgress);
-    fastify.get('/lesson-progress/last/:userId', getLastLessonProgress);
+async function lessonProgressRoutes(fastify, opts) {
+  fastify.post('/lesson-progress', upsertLessonProgress);
+  fastify.get('/lesson-progress/last/:userId', getLastLessonProgress);
 }
+
+module.exports = lessonProgressRoutes;

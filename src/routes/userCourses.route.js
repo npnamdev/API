@@ -1,5 +1,7 @@
-import { getUserCoursesWithProgress } from '../controllers/userCourses.controller.js';
+const { getUserCoursesWithProgress } = require('../controllers/userCourses.controller.js');
 
-export default async function (fastify, opts) {
-    fastify.get('/users/:userId/courses', getUserCoursesWithProgress);
+async function userCoursesRoutes(fastify, opts) {
+  fastify.get('/users/:userId/courses', getUserCoursesWithProgress);
 }
+
+module.exports = userCoursesRoutes;

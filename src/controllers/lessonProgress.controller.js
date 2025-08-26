@@ -1,4 +1,4 @@
-import UserProgress from '../models/lessonProgress.model.js';
+const UserProgress = require('../models/lessonProgress.model.js');
 
 
 export const upsertUserProgress = async (req, res) => {

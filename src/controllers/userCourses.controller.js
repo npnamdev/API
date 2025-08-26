@@ -1,8 +1,7 @@
-// Import các model cần thiết
-import Enrollment from '../models/enrollment.model.js'; // Model lưu thông tin đăng ký khoá học của người dùng
-import Chapter from '../models/chapter.model.js';       // Model chương học (mỗi khoá học có nhiều chương)
-import Lesson from '../models/lesson.model.js';         // Model bài học (mỗi chương có nhiều bài)
-import UserProgress from '../models/UserProgress.model.js'; // Model tiến độ học tập của người dùng
+const Enrollment = require('../models/enrollment.model.js');
+const Chapter = require('../models/chapter.model.js');
+const Lesson = require('../models/lesson.model.js');
+const UserProgress = require('../models/UserProgress.model.js');
 
 // API: Lấy danh sách các khoá học mà người dùng đã đăng ký, kèm tiến độ học của từng khoá
 export const getUserCoursesWithProgress = async (req, reply) => {
