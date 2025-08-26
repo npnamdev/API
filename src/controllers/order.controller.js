@@ -3,6 +3,7 @@ const Enrollment = require('../models/enrollment.model');
 const User = require('../models/user.model');
 const Course = require('../models/course.model');
 
+
 exports.activateOrder = async (req, reply) => {
     try {
         const { orderId } = req.params;

@@ -5,7 +5,12 @@ const LessonProgress = require('../models/lessonProgress.model');
 
 exports.getMyCourses = async (req, reply) => {
   try {
-    const { userId } = req.params;
+    // Lấy userId từ req.user (đảm bảo middleware xác thực JWT/session đã gán req.user)
+    const userId = req.user.id;
+
+    if (!userId) {
+      return reply.code(401).send({ message: 'Unauthorized' });
+    }
 
     // Lấy tất cả enrollment của user
     const enrollments = await Enrollment.find({ user: userId }).populate('course');
