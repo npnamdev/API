@@ -1,23 +1,5 @@
 const mongoose = require('mongoose');
 
-// const orderSchema = new mongoose.Schema(
-//     {
-//         orderCode: { type: String, unique: true },
-//         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-//         courses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true }],
-//         paymentMethod: { type: String, enum: ['cash', 'vnpay', 'momo', 'banking'], required: true, },
-//         totalPrice: { type: Number, required: true },
-//         isPaid: { type: Boolean, default: false },
-//         status: { type: String, enum: ['pending', 'processing', 'completed', 'cancelled'], default: 'pending' },
-//         paymentInfo: {
-//             transactionId: { type: String },
-//             paidAt: { type: Date },
-//             responseData: { type: Object },
-//         },
-//     },
-//     { timestamps: true }
-// );
-
 const orderSchema = new mongoose.Schema(
     {
         orderCode: { type: String, unique: true }, // Mã đơn ngắn gọn để tra cứu
@@ -36,7 +18,8 @@ const orderSchema = new mongoose.Schema(
         paymentMethod: { type: String, enum: ['cash', 'bank'], required: true },
 
         // Trạng thái đơn hàng
-        status: { type: String, enum: ['pending', 'completed', 'cancelled'], default: 'pending' }
+        paymentStatus: { type: String, enum: ['pending', 'paid', 'cancelled'], default: 'pending' }
+        // status: { type: String, enum: ['pending', 'completed', 'cancelled'], default: 'pending' }
     },
     { timestamps: true }
 );

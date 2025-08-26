@@ -7,8 +7,8 @@ async function orderRoutes(fastify, options) {
     fastify.put('/orders/:id', orderController.updateOrder);
     fastify.delete('/orders/:id', orderController.deleteOrder);
 
-    // ✅ Route cập nhật trạng thái đơn hàng
-    fastify.put('/orders/:orderId/status', orderController.updateOrderStatus);
+    // Route kích hoạt đơn hàng
+    fastify.put('/orders/:orderId/activate', orderController.activateOrder);
 }
 
 module.exports = orderRoutes;
