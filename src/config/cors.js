@@ -3,6 +3,7 @@ const corsOptions = {
         'http://localhost:3000',
         "https://wedly.info",
         "https://didactic-funicular-x55q7vw6q56c997q-3000.app.github.dev",
+        "https://curly-chainsaw-g464qr5vg5h54v-3000.app.github.dev"
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
