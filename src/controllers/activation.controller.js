@@ -68,7 +68,15 @@ exports.createActivationCode = async (req, reply) => {
     }
 };
 
-
+exports.updateActivationCode = async (req, reply) => {
+    try {
+        const updated = await ActivationCode.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!updated) return reply.code(404).send({ message: 'Activation code not found' });
+        reply.send(updated);
+    } catch (err) {
+        reply.code(400).send({ error: err.message });
+    }
+};
 
 exports.deleteActivationCode = async (req, reply) => {
     const deleted = await ActivationCode.findByIdAndDelete(req.params.id);
