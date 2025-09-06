@@ -122,7 +122,8 @@ async function getItemsByParent(req, reply) {
         const [total, items] = await Promise.all([
             Item.countDocuments(query),
             Item.find(query)
-                .sort({ order: 1 })
+                // .sort({ order: 1 })
+                .sort({ createdAt: -1, order: 1 })
                 .skip(skip)
                 .limit(limit)
         ]);
