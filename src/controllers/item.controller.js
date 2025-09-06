@@ -190,6 +190,47 @@ async function getItemsByParent(req, reply) {
 }
 
 // Tạo file hoặc folder (dữ liệu JSON fake)
+// async function createItem(req, reply) {
+//     try {
+//         const body = req.body;
+
+//         if (!body.name || !body.type) {
+//             return reply.status(400).send({ error: "name and type are required" });
+//         }
+
+//         if (body.type === 'file') {
+//             if (!body.fileType || !body.url || typeof body.size !== 'number') {
+//                 return reply.status(400).send({ error: "fileType, url, size required for file type" });
+//             }
+//         }
+
+//         let order = body.order;
+//         if (order == null) {
+//             const maxOrderItem = await Item.find({ parentId: body.parentId || null })
+//                 .sort({ order: -1 })
+//                 .limit(1);
+//             order = maxOrderItem.length ? maxOrderItem[0].order + 1 : 0;
+//         }
+
+//         const newItem = new Item({
+//             name: body.name,
+//             type: body.type,
+//             fileType: body.fileType,
+//             url: body.url,
+//             size: body.size,
+//             parentId: body.parentId || null,
+//             order
+//         });
+
+//         const savedItem = await newItem.save();
+//         return reply.status(201).send(savedItem);
+
+//     } catch (err) {
+//         req.log.error(err);
+//         return reply.status(500).send({ error: "Server error" });
+//     }
+// }
+
 async function createItem(req, reply) {
     try {
         const body = req.body;
@@ -205,7 +246,12 @@ async function createItem(req, reply) {
         }
 
         let order = body.order;
-        if (order == null) {
+
+        if (body.type === 'folder') {
+            // folder mới luôn đứng trên cùng
+            order = -1;
+        } else if (order == null) {
+            // với file, đặt order = maxOrder + 1
             const maxOrderItem = await Item.find({ parentId: body.parentId || null })
                 .sort({ order: -1 })
                 .limit(1);
