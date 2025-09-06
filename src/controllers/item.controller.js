@@ -189,88 +189,57 @@ const createFileAndUploadToCloudinary = async (req, reply) => {
 //     }
 // }
 
-
 async function getItemsByParent(req, reply) {
   try {
-    const parentId = req.query.parentId === 'null' || !req.query.parentId ? null : req.query.parentId;
+    const parentId = req.query.parentId === 'null' || !req.query.parentId
+      ? null
+      : req.query.parentId;
+
     const fileType = req.query.fileType || null;
+
     const page = parseInt(req.query.page) > 0 ? parseInt(req.query.page) : 1;
     const limit = parseInt(req.query.limit) > 0 ? parseInt(req.query.limit) : 10;
     const skip = (page - 1) * limit;
 
+    // Tạo query object
     const query = { parentId };
 
-    // Nếu filter fileType, folder vẫn luôn lấy
+    // Nếu filter fileType, folder vẫn được lấy
     if (fileType && fileType !== 'all') {
       query.$or = [
-        { type: 'folder' },
-        { fileType: fileType }
+        { type: 'folder' },       // luôn lấy folder
+        { fileType: fileType }    // hoặc file đúng loại
       ];
     }
 
-    // Sắp xếp: folder luôn lên trên, file theo order hoặc createdAt
-    // folder: order = -1 luôn đứng đầu
-    const sortOption = {
-      type: 1,       // folder trước, file sau
-      order: 1,      // file kéo thả
-      createdAt: -1, // mới nhất lên đầu
-    };
+    // Lấy param sortBy từ query, mặc định 'createdAt'
+    const sortBy = req.query.sortBy === 'order' ? 'order' : 'createdAt';
+    const sortOption = {};
+    if (sortBy === 'order') sortOption.order = 1;
+    else sortOption.createdAt = -1;
 
-    const allItems = await Item.find(query).sort(sortOption);
+    const [total, items] = await Promise.all([
+      Item.countDocuments(query),
+      Item.find(query)
+        .sort(sortOption)
+        .skip(skip)
+        .limit(limit)
+    ]);
 
-    const total = allItems.length;
-    const items = allItems.slice(skip, skip + limit);
     const pages = Math.ceil(total / limit);
 
-    return reply.send({ items, total, page, pages });
+    return reply.send({
+      items,
+      total,
+      page,
+      pages
+    });
   } catch (err) {
     req.log.error(err);
     return reply.status(500).send({ error: "Server error" });
   }
 }
 
-
-// Tạo file hoặc folder (dữ liệu JSON fake)
-// async function createItem(req, reply) {
-//     try {
-//         const body = req.body;
-
-//         if (!body.name || !body.type) {
-//             return reply.status(400).send({ error: "name and type are required" });
-//         }
-
-//         if (body.type === 'file') {
-//             if (!body.fileType || !body.url || typeof body.size !== 'number') {
-//                 return reply.status(400).send({ error: "fileType, url, size required for file type" });
-//             }
-//         }
-
-//         let order = body.order;
-//         if (order == null) {
-//             const maxOrderItem = await Item.find({ parentId: body.parentId || null })
-//                 .sort({ order: -1 })
-//                 .limit(1);
-//             order = maxOrderItem.length ? maxOrderItem[0].order + 1 : 0;
-//         }
-
-//         const newItem = new Item({
-//             name: body.name,
-//             type: body.type,
-//             fileType: body.fileType,
-//             url: body.url,
-//             size: body.size,
-//             parentId: body.parentId || null,
-//             order
-//         });
-
-//         const savedItem = await newItem.save();
-//         return reply.status(201).send(savedItem);
-
-//     } catch (err) {
-//         req.log.error(err);
-//         return reply.status(500).send({ error: "Server error" });
-//     }
-// }
 
 async function createItem(req, reply) {
     try {
