@@ -101,6 +101,47 @@ const createFileAndUploadToCloudinary = async (req, reply) => {
     }
 };
 
+// async function getItemsByParent(req, reply) {
+//     try {
+//         const parentId = req.query.parentId === 'null' || !req.query.parentId
+//             ? null
+//             : req.query.parentId;
+
+//         const fileType = req.query.fileType || null; // Lấy fileType từ query nếu có
+
+//         const page = parseInt(req.query.page) > 0 ? parseInt(req.query.page) : 1;
+//         const limit = parseInt(req.query.limit) > 0 ? parseInt(req.query.limit) : 10;
+//         const skip = (page - 1) * limit;
+
+//         // Tạo query object
+//         const query = { parentId };
+//         if (fileType && fileType !== 'all') {
+//             query.fileType = fileType; // chỉ lọc khi khác 'all'
+//         }
+
+//         const [total, items] = await Promise.all([
+//             Item.countDocuments(query),
+//             Item.find(query)
+//                 // .sort({ order: 1 })
+//                 .sort({ createdAt: -1, order: 1 })
+//                 .skip(skip)
+//                 .limit(limit)
+//         ]);
+
+//         const pages = Math.ceil(total / limit);
+
+//         return reply.send({
+//             items,
+//             total,
+//             page,
+//             pages
+//         });
+//     } catch (err) {
+//         req.log.error(err);
+//         return reply.status(500).send({ error: "Server error" });
+//     }
+// }
+
 async function getItemsByParent(req, reply) {
     try {
         const parentId = req.query.parentId === 'null' || !req.query.parentId
@@ -119,11 +160,17 @@ async function getItemsByParent(req, reply) {
             query.fileType = fileType; // chỉ lọc khi khác 'all'
         }
 
+        // Lấy param sortBy từ query, mặc định 'createdAt'
+        const sortBy = req.query.sortBy === 'order' ? 'order' : 'createdAt';
+        // Nếu sortBy là order, thứ tự tăng dần; createdAt thì giảm dần
+        const sortOption: any = {};
+        if (sortBy === 'order') sortOption.order = 1;
+        else sortOption.createdAt = -1;
+
         const [total, items] = await Promise.all([
             Item.countDocuments(query),
             Item.find(query)
-                // .sort({ order: 1 })
-                .sort({ createdAt: -1, order: 1 })
+                .sort(sortOption)
                 .skip(skip)
                 .limit(limit)
         ]);
@@ -141,40 +188,6 @@ async function getItemsByParent(req, reply) {
         return reply.status(500).send({ error: "Server error" });
     }
 }
-
-
-// // Lấy tất cả file/folder theo parentId (null là root) + phân trang
-// async function getItemsByParent(req, reply) {
-//     try {
-//         const parentId = req.query.parentId === 'null' || !req.query.parentId
-//             ? null
-//             : req.query.parentId;
-
-//         const page = parseInt(req.query.page) > 0 ? parseInt(req.query.page) : 1;
-//         const limit = parseInt(req.query.limit) > 0 ? parseInt(req.query.limit) : 10;
-//         const skip = (page - 1) * limit;
-
-//         const [total, items] = await Promise.all([
-//             Item.countDocuments({ parentId }),
-//             Item.find({ parentId })
-//                 .sort({ order: 1 })
-//                 .skip(skip)
-//                 .limit(limit)
-//         ]);
-
-//         const pages = Math.ceil(total / limit);
-
-//         return reply.send({
-//             items,
-//             total,
-//             page,
-//             pages
-//         });
-//     } catch (err) {
-//         req.log.error(err);
-//         return reply.status(500).send({ error: "Server error" });
-//     }
-// }
 
 // Tạo file hoặc folder (dữ liệu JSON fake)
 async function createItem(req, reply) {
