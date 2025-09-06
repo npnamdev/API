@@ -163,7 +163,7 @@ async function getItemsByParent(req, reply) {
         // Lấy param sortBy từ query, mặc định 'createdAt'
         const sortBy = req.query.sortBy === 'order' ? 'order' : 'createdAt';
         // Nếu sortBy là order, thứ tự tăng dần; createdAt thì giảm dần
-        const sortOption: any = {};
+        const sortOption = {};
         if (sortBy === 'order') sortOption.order = 1;
         else sortOption.createdAt = -1;
 
