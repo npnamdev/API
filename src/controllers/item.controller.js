@@ -81,15 +81,20 @@ const createFileAndUploadToCloudinary = async (req, reply) => {
         //     order = maxOrderItem.length ? maxOrderItem[0].order + 1 : 0;
         // }
 
-         // --- Xác định order giống như logic bạn gửi
-        let order = req.body?.order;
 
-        if ('folder' === 'folder') {
-            // folder mới luôn đứng trên cùng
-            order = -1;
-        } else if (order == null) {
-    order = -1;
-        }
+      // Xác định order để file mới luôn lên đầu
+const minOrderItem = await Item.find({ parentId: parentId || null })
+    .sort({ order: 1 }) // sắp xếp tăng dần
+    .limit(1);
+
+let order;
+if (minOrderItem.length === 0) {
+    // Nếu chưa có file nào, đặt order = 0
+    order = 0;
+} else {
+    // Nếu đã có file, đặt order = minOrder - 1
+    order = minOrderItem[0].order - 1;
+}
 
         const newItem = new Item({
             name: originalFilename,
