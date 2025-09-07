@@ -46,34 +46,38 @@ exports.getAllCourses = async (request, reply) => {
     }
 };
 
+
 exports.getCourseById = async (req, reply) => {
     try {
-        const course = await Course.findById(req.params.id)
-            .populate('instructors', 'name avatar')
-            .populate('category', 'name')
-            .populate('topics', 'name');
+        const { id } = req.params;
 
-        if (!course) return reply.code(404).send({ error: 'Course not found' });
+        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+            return reply.code(400).send({ error: "Invalid course ID" });
+        }
 
-        const chapters = await Chapter.find({ courseId: course._id })
-            .sort({ order: 1 });
+        const course = await Course.findById(id)
+            .populate("instructors", "name avatar")
+            .populate("category", "name")
+            .populate("topics", "name");
+
+        if (!course) {
+            return reply.code(404).send({ error: "Course not found" });
+        }
+
+        const chapters = await Chapter.find({ courseId: course._id }).sort({ order: 1 });
 
         const chaptersWithLessonCount = await Promise.all(
             chapters.map(async (chapter) => {
                 const lessons = await Lesson.find({ chapterId: chapter._id })
                     .sort({ order: 1 })
-                    .select('title');
+                    .select("title order");
 
                 return {
                     _id: chapter._id,
                     title: chapter.title,
                     order: chapter.order,
                     lessonCount: lessons.length,
-                    lessons: lessons.map(lesson => ({
-                        _id: lesson._id,
-                        title: lesson.title,
-                        order: lesson.order
-                    }))
+                    lessons,
                 };
             })
         );
@@ -84,7 +88,7 @@ exports.getCourseById = async (req, reply) => {
         });
     } catch (error) {
         console.error(error);
-        reply.code(500).send({ error: 'Server error' });
+        reply.code(500).send({ error: "Server error" });
     }
 };
 

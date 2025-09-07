@@ -1,25 +1,60 @@
 const mongoose = require('mongoose');
 
 const courseSchema = new mongoose.Schema({
-    title: { type: String, required: true },
-    slug: { type: String, unique: true },
-    description: String,
-    thumbnail: String,
-    price: { type: Number, default: 0, min: [0, 'Giá khóa học không thể âm'] },
-    discount: {
-        type: Number, default: 0, min: [0, 'Giảm giá không thể âm'],
-        validate: { validator: function (value) { return value <= this.price; }, message: 'Giảm giá không thể lớn hơn giá khóa học' }
+    title: { type: String, required: true },                  /// Tiêu đề khoá học
+    slug: { type: String, unique: true },                     /// Slug URL duy nhất
+    shortDescription: { type: String },                       /// Mô tả ngắn
+    description: { type: String },                            /// Mô tả chi tiết
+    thumbnail: String,                                        /// Ảnh đại diện
+    originalPrice: {                                          /// Giá gốc
+        type: Number,
+        required: true,
+        min: [0, 'Giá gốc không thể âm']
     },
-    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
-    topics: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Topic' }],
-    instructors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-    tags: String,
+    salePrice: {                                              /// Giá khuyến mãi
+        type: Number,
+        default: 0,
+        min: [0, 'Giá khuyến mãi không thể âm'],
+        validate: {
+            validator: function (value) {
+                return value <= this.originalPrice;           /// Không vượt quá giá gốc
+            },
+            message: 'Giá khuyến mãi không thể lớn hơn giá gốc'
+        }
+    },
+    saleStart: { type: Date },                                /// Thời gian bắt đầu khuyến mãi
+    saleEnd: { type: Date },                                  /// Thời gian kết thúc khuyến mãi
 
-    type: { type: String, enum: ['single', 'combo', 'membership'], default: 'single' },
+    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' }, /// Danh mục
+    topics: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Topic' }],    /// Chủ đề
+    instructors: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],/// Giảng viên
 
-    isPublished: { type: Boolean, default: false },
-    status: { type: String, enum: ['draft', 'coming_soon', 'published', 'free', 'archived'], default: 'draft' },
-}, { timestamps: true });
+    tags: [{ type: String }],                                /// Từ khoá tìm kiếm
+    duration: { type: String },                              /// Thời lượng tổng (vd: "10 giờ")
+    materials: [{ type: String }],                           /// Tài liệu đính kèm
+
+    requirements: [{ type: String }],                        /// Yêu cầu trước khi học
+    includes: [{ type: String }],                            /// Khoá học bao gồm gì (video, quiz…)
+    objectives: [{ type: String }],                          /// Mục tiêu đạt được
+    audience: [{ type: String }],                            /// Đối tượng học viên
+    relatedCourses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }], /// Khoá học liên quan
+
+    sequentialLearning: { type: Boolean, default: false },   /// true = học theo thứ tự, false = học tự do
+    accessDuration: { type: Number, default: null },         /// Số ngày sử dụng (null = vĩnh viễn)
+
+    type: {
+        type: String,
+        enum: ['single', 'combo', 'membership'],             /// single = 1 khoá, combo = nhiều khoá, membership = gói thành viên
+        default: 'single'
+    },
+
+    isPublished: { type: Boolean, default: false },          /// true = đã public, false = nháp
+    status: {
+        type: String,
+        enum: ['draft', 'coming_soon', 'published', 'free', 'archived'], /// draft: nháp, published: đã phát hành...
+        default: 'draft'
+    },
+}, { timestamps: true });                                    /// Tự động thêm createdAt, updatedAt
 
 const Course = mongoose.model('Course', courseSchema);
 
