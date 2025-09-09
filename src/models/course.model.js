@@ -6,11 +6,11 @@ const courseSchema = new mongoose.Schema({
     shortDescription: { type: String },                       /// Mô tả ngắn
     description: { type: String },                            /// Mô tả chi tiết
     thumbnail: String,                                        /// Ảnh đại diện
-    originalPrice: {                                          /// Giá gốc
+    originalPrice: {
         type: Number,
-        required: true,
+        default: 0,
         min: [0, 'Giá gốc không thể âm']
-    },
+    }
     salePrice: {                                              /// Giá khuyến mãi
         type: Number,
         default: 0,
