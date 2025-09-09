@@ -10,7 +10,7 @@ const courseSchema = new mongoose.Schema({
         type: Number,
         default: 0,
         min: [0, 'Giá gốc không thể âm']
-    }
+    },
     salePrice: {                                              /// Giá khuyến mãi
         type: Number,
         default: 0,
