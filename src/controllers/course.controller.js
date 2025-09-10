@@ -16,7 +16,7 @@ exports.getAllCourses = async (request, reply) => {
 
         const sortOrder = sort === 'asc' ? 1 : -1;
         const courses = await Course.find(searchQuery)
-            .select('title slug thumbnail price discount description instructors tags')
+            // .select('title thumbnail type isPublished status createdAt updateAt')
             .skip(skip)
             .limit(pageSize)
             .sort({ createdAt: sortOrder })
@@ -51,7 +51,7 @@ exports.getCourseById = async (req, reply) => {
     try {
         const { id } = req.params;
 
-        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+        if (!id) {
             return reply.code(400).send({ error: "Invalid course ID" });
         }
 
