@@ -105,11 +105,25 @@ exports.createCourse = async (req, reply) => {
 
 exports.updateCourse = async (req, reply) => {
     try {
-        const updatedCourse = await Course.findByIdAndUpdate(req.params.id, req.body, {
+        const data = { ...req.body };
+
+        // Nếu originalPrice hoặc salePrice không tồn tại hoặc rỗng → set về 0
+        if (data.originalPrice === undefined || data.originalPrice === "") {
+            data.originalPrice = 0;
+        }
+        if (data.salePrice === undefined || data.salePrice === "") {
+            data.salePrice = 0;
+        }
+
+        const updatedCourse = await Course.findByIdAndUpdate(req.params.id, data, {
             new: true,
             runValidators: true
         });
-        if (!updatedCourse) return reply.code(404).send({ error: 'Course not found' });
+
+        if (!updatedCourse) {
+            return reply.code(404).send({ error: 'Course not found' });
+        }
+
         reply.send(updatedCourse);
     } catch (error) {
         reply.code(400).send({ error: error.message });
