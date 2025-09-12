@@ -107,21 +107,27 @@ exports.updateCourse = async (req, reply) => {
     try {
         const data = { ...req.body };
 
-        // Nếu originalPrice hoặc salePrice không tồn tại hoặc rỗng → set về 0
-        if (data.originalPrice === undefined || data.originalPrice === "") {
-            data.originalPrice = 0;
+        // Xử lý giá gốc
+        if (data.originalPrice === "") {
+            data.originalPrice = null; // chưa set giá
+        } else if (data.originalPrice !== undefined) {
+            data.originalPrice = Number(data.originalPrice);
         }
-        if (data.salePrice === undefined || data.salePrice === "") {
-            data.salePrice = 0;
+
+        // Xử lý giá khuyến mãi
+        if (data.salePrice === "") {
+            data.salePrice = null; // chưa set giá
+        } else if (data.salePrice !== undefined) {
+            data.salePrice = Number(data.salePrice);
         }
 
         const updatedCourse = await Course.findByIdAndUpdate(req.params.id, data, {
             new: true,
-            runValidators: true
+            runValidators: true,
         });
 
         if (!updatedCourse) {
-            return reply.code(404).send({ error: 'Course not found' });
+            return reply.code(404).send({ error: "Course not found" });
         }
 
         reply.send(updatedCourse);

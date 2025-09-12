@@ -8,16 +8,17 @@ const courseSchema = new mongoose.Schema({
     thumbnail: String,                                        /// Ảnh đại diện
     originalPrice: {
         type: Number,
-        default: 0,
+        default: null,
         min: [0, 'Giá gốc không thể âm']
     },
-    salePrice: {                                              /// Giá khuyến mãi
+    salePrice: {
         type: Number,
-        default: 0,
+        default: null,
         min: [0, 'Giá khuyến mãi không thể âm'],
         validate: {
             validator: function (value) {
-                return value <= this.originalPrice;           /// Không vượt quá giá gốc
+                if (value == null) return true;  // cho phép null
+                return value <= this.originalPrice;
             },
             message: 'Giá khuyến mãi không thể lớn hơn giá gốc'
         }
