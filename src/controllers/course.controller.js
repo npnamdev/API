@@ -105,23 +105,7 @@ exports.createCourse = async (req, reply) => {
 
 exports.updateCourse = async (req, reply) => {
     try {
-        const data = { ...req.body };
-
-        // Xử lý giá gốc
-        if (data.originalPrice === "") {
-            data.originalPrice = null; // chưa set giá
-        } else if (data.originalPrice !== undefined) {
-            data.originalPrice = Number(data.originalPrice);
-        }
-
-        // Xử lý giá khuyến mãi
-        if (data.salePrice === "") {
-            data.salePrice = null; // chưa set giá
-        } else if (data.salePrice !== undefined) {
-            data.salePrice = Number(data.salePrice);
-        }
-
-        const updatedCourse = await Course.findByIdAndUpdate(req.params.id, data, {
+        const updatedCourse = await Course.findByIdAndUpdate(req.params.id, req.body, {
             new: true,
             runValidators: true,
         });
