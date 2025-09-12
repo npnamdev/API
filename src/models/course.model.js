@@ -44,6 +44,8 @@ const courseSchema = new mongoose.Schema({
     sequentialLearning: { type: Boolean, default: false },   /// true = học theo thứ tự, false = học tự do
     accessDuration: { type: Number, default: null },         /// Số ngày sử dụng (null = vĩnh viễn)
 
+    label: { type: String, default: null }, // Nhãn đơn
+
     type: {
         type: String,
         enum: ['single', 'combo', 'membership'],             /// single = 1 khoá, combo = nhiều khoá, membership = gói thành viên
