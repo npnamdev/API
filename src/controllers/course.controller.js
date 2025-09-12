@@ -56,9 +56,10 @@ exports.getCourseById = async (req, reply) => {
         }
 
         const course = await Course.findById(id)
-            .populate("instructors", "name avatar")
+            .populate("instructors", "fullName")
             .populate("category", "name")
-            .populate("topics", "name");
+            .populate("topics", "name")
+            .populate("relatedCourses", "title");
 
         if (!course) {
             return reply.code(404).send({ error: "Course not found" });
