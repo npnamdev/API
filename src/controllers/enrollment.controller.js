@@ -5,18 +5,23 @@ const LessonProgress = require('../models/lessonProgress.model');
 
 exports.getMyCourses = async (req, reply) => {
   try {
-    // Lấy userId từ req.user (đảm bảo middleware xác thực JWT/session đã gán req.user)
-    const userId = req.user.id;
+    const userId = req.user?.id;
 
     if (!userId) {
       return reply.code(401).send({ message: 'Unauthorized' });
     }
 
-    // Lấy tất cả enrollment của user
+    // Lấy tất cả enrollment của user và populate course
     const enrollments = await Enrollment.find({ user: userId }).populate('course');
 
     const results = await Promise.all(enrollments.map(async (enrollment) => {
-      const courseId = enrollment.course._id;
+      const course = enrollment.course;
+      if (!course) {
+        // Bỏ qua enrollment nếu course đã bị xóa
+        return null;
+      }
+
+      const courseId = course._id;
 
       // Lấy tất cả chapter của course
       const chapters = await Chapter.find({ course: courseId }).select('_id');
@@ -35,18 +40,18 @@ exports.getMyCourses = async (req, reply) => {
         completed: true
       });
 
-      // Tính progress %
       const progress = totalLessons === 0 ? 0 : (completedLessons / totalLessons) * 100;
 
       return {
-        course: enrollment.course,
+        course,
         enrolledAt: enrollment.enrolledAt,
         progress,
         expiresAt: enrollment.expiresAt
       };
     }));
 
-    return reply.send(results);
+    // Lọc các enrollment bị null (course bị xóa)
+    return reply.send(results.filter(r => r !== null));
 
   } catch (err) {
     return reply.code(500).send({ message: 'Server error', error: err.message });
