@@ -33,7 +33,9 @@ const courseSchema = new mongoose.Schema({
 
     tags: [{ type: String }],                                /// Từ khoá tìm kiếm
     duration: { type: String },                              /// Thời lượng tổng (vd: "10 giờ")
-    materials: [{ type: String }],                           /// Tài liệu đính kèm
+
+
+    materials: [{ type: mongoose.Schema.Types.ObjectId, ref: "CourseMaterial" }], // Tài liệu đính kèm
 
     requirements: [{ type: String }],                        /// Yêu cầu trước khi học
     includes: [{ type: String }],                            /// Khoá học bao gồm gì (video, quiz…)
