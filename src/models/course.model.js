@@ -35,8 +35,6 @@ const courseSchema = new mongoose.Schema({
     duration: { type: String },                              /// Thời lượng tổng (vd: "10 giờ")
 
 
-    materials: [{ type: mongoose.Schema.Types.ObjectId, ref: "CourseMaterial" }], // Tài liệu đính kèm
-
     requirements: [{ type: String }],                        /// Yêu cầu trước khi học
     includes: [{ type: String }],                            /// Khoá học bao gồm gì (video, quiz…)
     objectives: [{ type: String }],                          /// Mục tiêu đạt được
