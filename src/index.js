@@ -77,6 +77,7 @@ fastify.register(require('./routes/item.route'), { prefix: process.env.API_PREFI
 fastify.register(require('./routes/enrollment.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/courseMaterial.route'), { prefix: process.env.API_PREFIX || '/api' });
 fastify.register(require('./routes/courseNotification.route'), { prefix: process.env.API_PREFIX || '/api' });
+fastify.register(require('./routes/automation.route'), { prefix: process.env.API_PREFIX || '/api' });
 
 
 fastify.register(require('./routes/oauth.route'));
