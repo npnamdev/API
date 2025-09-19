@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>JSON Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/themes/prism.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/prism.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.25.0/components/prism-json.min.js"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      height: 100dvh;
+      width: 100%;
+      background: #ffffff;
+      display: flex;
+    }
+
+    #jsonContainer {
+      flex: 1;
+      overflow: auto;
+    }
+
+    pre {
+      margin: 0 !important;
+      height: 100%;
+      width: 100%;
+      font-size: 14px !important;
+      line-height: 1.4;
+      padding: 8px 20px;
+      background-color: #ffffff !important;
+    }
+
+    :not(pre)>code[class*="language-"],
+    pre[class*="language-"] {
+      background-color: #f9f9f9 !important;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- JSON hiển thị full màn -->
+  <div id="jsonContainer">
+    <pre id="jsonDisplay" class="language-json whitespace-pre font-mono text-black"></pre>
+  </div>
+
+  <script>
+    async function fetchApiData(api) {
+      const jsonDisplay = document.getElementById('jsonDisplay');
+      jsonDisplay.textContent = '⏳ Loading...';
+
+      try {
+        const response = await fetch(api);
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const data = await response.json();
+          const formatted = JSON.stringify(data, null, 2);
+          jsonDisplay.textContent = formatted;
+          Prism.highlightElement(jsonDisplay);
+        } else {
+          throw new Error("Response is not JSON!");
+        }
+      } catch (err) {
+        jsonDisplay.textContent = '❌ Error: ' + err.message;
+        console.error("fetchApiData error:", err);
+      }
+    }
+
+    // Auto gọi API dựa theo đường dẫn
+    window.onload = function () {
+      const path = window.location.pathname;
+      if (path.startsWith("/viewer/")) {
+        const apiUrl = path.replace("/viewer/", "/api/");
+        fetchApiData(apiUrl);
+      } else {
+        document.getElementById('jsonDisplay').textContent = '❌ No API path detected.';
+      }
+    }
+  </script>
+</body>
+
+</html>

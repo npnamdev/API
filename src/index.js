@@ -85,7 +85,10 @@ fastify.register(require('./routes/oauth.route'));
 
 
 fastify.get('/ping', async (request, reply) => { reply.code(200).send('pong') });
-fastify.get('/view', (req, reply) => { return reply.sendFile('view.html'); });
+fastify.get('/viewer', (req, reply) => { return reply.sendFile('viewer.html'); });
+fastify.get("/viewer/*", (req, reply) => {
+  return reply.sendFile("viewer.html");
+});
 
 
 // API lấy dung lượng Cloudinary
