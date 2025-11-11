@@ -5,26 +5,69 @@ const Lesson = require('../models/lesson.model');
 
 exports.getAllCourses = async (request, reply) => {
     try {
-        const { page = 1, limit = 10, search = '', sort = 'desc' } = request.query;
+        const {
+            page = 1,
+            limit = 10,
+            search = '',
+            sort = 'desc',
+            sortBy = 'createdAt',
+            isPublished,
+            status,
+            category,
+            topic
+        } = request.query;
+
         const pageNumber = Math.max(1, parseInt(page));
         const pageSize = Math.max(1, parseInt(limit));
         const skip = (pageNumber - 1) * pageSize;
 
-        const searchQuery = search
-            ? { title: { $regex: search, $options: 'i' } }
-            : {};
+        // Xây dựng query filter
+        const query = {};
 
+        // Xử lý search - tìm kiếm trong title, shortDescription, description và tags
+        if (search) {
+            query.$or = [
+                { title: { $regex: search, $options: 'i' } },
+                { shortDescription: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } },
+                { tags: { $in: [new RegExp(search, 'i')] } }
+            ];
+        }
+
+        // Filter theo isPublished
+        if (isPublished !== undefined) {
+            query.isPublished = isPublished === 'true' || isPublished === true;
+        }
+
+        // Filter theo status
+        if (status) {
+            query.status = status;
+        }
+
+        // Filter theo danh mục
+        if (category) {
+            query.category = category;
+        }
+
+        // Filter theo chủ đề
+        if (topic) {
+            query.topics = { $in: [topic] };
+        }
+
+        // Xử lý sort
         const sortOrder = sort === 'asc' ? 1 : -1;
-        const courses = await Course.find(searchQuery)
-            // .select('title thumbnail type isPublished status createdAt updateAt')
+        const sortObj = { [sortBy]: sortOrder };
+
+        // Thực hiện query
+        const courses = await Course.find(query)
             .skip(skip)
             .limit(pageSize)
-            .sort({ createdAt: sortOrder })
-            .populate('topics')
-            .populate('instructors')
-            .populate('category');
+            .sort(sortObj)
+            .populate('topics', 'name slug')
+            .populate('instructors', 'fullName avatar')
+            .populate('category', 'name slug');
 
-        const totalCourses = await Course.countDocuments(searchQuery);
+        const totalCourses = await Course.countDocuments(query);
         const totalPages = Math.ceil(totalCourses / pageSize);
 
         reply.send({
@@ -37,6 +80,14 @@ exports.getAllCourses = async (request, reply) => {
                 totalCourses,
                 limit: pageSize,
             },
+            filters: {
+                search: search || null,
+                isPublished: isPublished || null,
+                status: status || null,
+                category: category || null,
+                topic: topic || null,
+                sort: { by: sortBy, order: sort }
+            }
         });
     } catch (error) {
         reply.code(500).send({
@@ -90,6 +141,74 @@ exports.getCourseById = async (req, reply) => {
     } catch (error) {
         console.error(error);
         reply.code(500).send({ error: "Server error" });
+    }
+};
+
+exports.getCourseBySlug = async (req, reply) => {
+    try {
+        const { slug } = req.params;
+
+        if (!slug) {
+            return reply.code(400).send({
+                status: 'error',
+                message: "Slug is required"
+            });
+        }
+
+        const course = await Course.findOne({ slug })
+            .populate("instructors", "fullName email avatar")
+            .populate("category", "name slug")
+            .populate("topics", "name slug")
+            .populate("relatedCourses", "title slug thumbnail originalPrice salePrice");
+
+        if (!course) {
+            return reply.code(404).send({
+                status: 'error',
+                message: "Course not found"
+            });
+        }
+
+        // Kiểm tra khóa học có được public không
+        if (!course.isPublished || course.status !== 'published') {
+            return reply.code(403).send({
+                status: 'error',
+                message: "Course is not available"
+            });
+        }
+
+        const chapters = await Chapter.find({ courseId: course._id }).sort({ order: 1 });
+
+        const chaptersWithLessons = await Promise.all(
+            chapters.map(async (chapter) => {
+                const lessons = await Lesson.find({ chapterId: chapter._id })
+                    .sort({ order: 1 })
+                    .select("title order duration videoUrl");
+
+                return {
+                    _id: chapter._id,
+                    title: chapter.title,
+                    description: chapter.description,
+                    order: chapter.order,
+                    lessonCount: lessons.length,
+                    lessons,
+                };
+            })
+        );
+
+        reply.send({
+            status: 'success',
+            message: 'Course retrieved successfully',
+            data: {
+                ...course.toObject(),
+                chapters: chaptersWithLessons,
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        reply.code(500).send({
+            status: 'error',
+            message: "Server error"
+        });
     }
 };
 
