@@ -169,12 +169,12 @@ exports.getCourseBySlug = async (req, reply) => {
         }
 
         // Kiểm tra khóa học có được public không
-        if (!course.isPublished || course.status !== 'published') {
-            return reply.code(403).send({
-                status: 'error',
-                message: "Course is not available"
-            });
-        }
+        // if (!course.isPublished || course.status !== 'published') {
+        //     return reply.code(403).send({
+        //         status: 'error',
+        //         message: "Course is not available"
+        //     });
+        // }
 
         const chapters = await Chapter.find({ courseId: course._id }).sort({ order: 1 });
 
