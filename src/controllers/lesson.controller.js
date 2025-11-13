@@ -22,7 +22,7 @@ exports.createLesson = async (request, reply) => {
         let duration = null;
 
         if (type === 'youtube') {
-            duration = await getYoutubeDuration(videoUrl); 
+            duration = await getYoutubeDuration(videoUrl);
         }
 
         const lesson = new Lesson({
@@ -46,7 +46,7 @@ exports.createLesson = async (request, reply) => {
 // Lấy bài học theo ID
 exports.getLessonById = async (req, reply) => {
     try {
-        const lesson = await Lesson.findById(req.params.id).populate('course');
+        const lesson = await Lesson.findById(req.params.id);
         if (!lesson) return reply.code(404).send({ error: 'Lesson not found' });
         reply.send(lesson);
     } catch (error) {
