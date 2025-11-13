@@ -33,6 +33,11 @@ const courseSchema = new mongoose.Schema({
 
     tags: [{ type: String }],                                /// Từ khoá tìm kiếm
     duration: { type: String },                              /// Thời lượng tổng (vd: "10 giờ")
+    language: {
+        type: String,
+        enum: ['vi', 'en', 'jp', 'ko', 'fr', 'de', 'zh'],
+        default: 'vi'
+    },
 
 
     requirements: [{ type: String }],                        /// Yêu cầu trước khi học
