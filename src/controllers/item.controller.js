@@ -103,6 +103,7 @@ if (minOrderItem.length === 0) {
             extension: ext, // lưu đuôi file
             url: uploadResult.secure_url,
             size: uploadResult.bytes,
+            duration: uploadResult.duration || null, // lưu duration nếu có (cho video/audio)
             parentId,
             order,
         });
@@ -290,6 +291,7 @@ async function createItem(req, reply) {
             fileType: body.fileType,
             url: body.url,
             size: body.size,
+            duration: body.duration || null,
             parentId: body.parentId || null,
             order
         });

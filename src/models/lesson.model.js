@@ -4,7 +4,7 @@ const lessonSchema = new mongoose.Schema({
   title: { type: String, required: true },
   type: { type: String, enum: ['video', 'youtube'], required: true },
   videoUrl: { type: String, required: true },
-  duration: { type: String },
+  duration: { type: Number }, // duration in seconds
   order: Number,
   chapterId: { type: mongoose.Schema.Types.ObjectId, ref: 'Chapter', required: true },
   isPreviewAllowed: { type: Boolean, default: false },

@@ -13,23 +13,23 @@ exports.getAllLessons = async (req, reply) => {
 
 exports.createLesson = async (request, reply) => {
     try {
-        const { title, type, videoUrl, chapterId, order } = request.body;
+        const { title, type, videoUrl, chapterId, order, duration } = request.body;
 
         if (!chapterId) {
             return reply.code(400).send({ message: 'chapterId is required' });
         }
 
-        let duration = null;
+        let lessonDuration = duration; // sử dụng duration từ request nếu có
 
-        if (type === 'youtube') {
-            duration = await getYoutubeDuration(videoUrl);
+        if (type === 'youtube' && !lessonDuration) {
+            lessonDuration = await getYoutubeDuration(videoUrl);
         }
 
         const lesson = new Lesson({
             title,
             type,
             videoUrl,
-            duration,
+            duration: lessonDuration,
             chapterId,
             order
         });

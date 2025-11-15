@@ -1,197 +1,109 @@
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
-    <meta charset="UTF-8" />
-    <title>Fastify + Socket.IO</title>
-    <script src="/socket.io/socket.io.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
-
 <body class="bg-gray-100 min-h-screen p-4 sm:p-6 font-sans">
-    <div class="max-w-2xl mx-auto">
-        <h1 class="text-2xl sm:text-3xl font-bold text-center mb-4 sm:mb-6 text-blue-600">
-            Fastify + Socket.IO
-        </h1>
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-center mb-8 text-blue-600">API Endpoints</h1>
 
-        <div class="flex justify-center mb-5">
-            <button id="notifyBtn"
-                class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded shadow text-base sm:text-lg">
-                Gửi thông báo
-            </button>
+        <div class="space-y-6">
+            <!-- Authentication -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">Authentication</h2>
+                <ul class="space-y-2">
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">POST /api/auth/register</code> - Đăng ký tài khoản</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">POST /api/auth/login</code> - Đăng nhập</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">POST /api/auth/logout</code> - Đăng xuất</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">GET /api/auth/me</code> - Thông tin người dùng hiện tại</li>
+                </ul>
+            </div>
+
+            <!-- Courses -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">Courses</h2>
+                <ul class="space-y-2">
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">GET /api/courses</code> - Lấy danh sách khóa học</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">GET /api/courses/:slug</code> - Lấy khóa học theo slug</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">GET /api/courses/:id</code> - Lấy khóa học theo ID</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">POST /api/courses</code> - Tạo khóa học mới</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">PUT /api/courses/:id</code> - Cập nhật khóa học</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">DELETE /api/courses/:id</code> - Xóa khóa học</li>
+                </ul>
+            </div>
+
+            <!-- Chapters -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">Chapters</h2>
+                <ul class="space-y-2">
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">GET /api/chapters</code> - Lấy danh sách chương</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">GET /api/chapters/:id</code> - Lấy chương theo ID</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">POST /api/chapters</code> - Tạo chương mới</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">PUT /api/chapters/:id</code> - Cập nhật chương</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">DELETE /api/chapters/:id</code> - Xóa chương</li>
+                </ul>
+            </div>
+
+            <!-- Lessons -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">Lessons</h2>
+                <ul class="space-y-2">
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">GET /api/lessons</code> - Lấy danh sách bài học</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">GET /api/lessons/:id</code> - Lấy bài học theo ID</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">POST /api/lessons</code> - Tạo bài học mới</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">PUT /api/lessons/:id</code> - Cập nhật bài học</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">DELETE /api/lessons/:id</code> - Xóa bài học</li>
+                </ul>
+            </div>
+
+            <!-- Users -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">Users</h2>
+                <ul class="space-y-2">
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">GET /api/users</code> - Lấy danh sách người dùng</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">GET /api/users/:id</code> - Lấy người dùng theo ID</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">PUT /api/users/:id</code> - Cập nhật người dùng</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">DELETE /api/users/:id</code> - Xóa người dùng</li>
+                </ul>
+            </div>
+
+            <!-- Categories -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">Categories</h2>
+                <ul class="space-y-2">
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">GET /api/categories</code> - Lấy danh sách danh mục</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">GET /api/categories/:id</code> - Lấy danh mục theo ID</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">POST /api/categories</code> - Tạo danh mục mới</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">PUT /api/categories/:id</code> - Cập nhật danh mục</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">DELETE /api/categories/:id</code> - Xóa danh mục</li>
+                </ul>
+            </div>
+
+            <!-- Notifications -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">Notifications</h2>
+                <ul class="space-y-2">
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">GET /api/notifications</code> - Lấy danh sách thông báo</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">POST /api/notifications</code> - Tạo thông báo mới</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">PATCH /api/notifications/:id/read</code> - Đánh dấu đã đọc</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">DELETE /api/notifications/:id</code> - Xóa thông báo</li>
+                </ul>
+            </div>
+
+            <!-- Other -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-semibold mb-4 text-gray-800">Other</h2>
+                <ul class="space-y-2">
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">GET /api/enrollments</code> - Lấy danh sách đăng ký</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">GET /api/orders</code> - Lấy danh sách đơn hàng</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">GET /api/faq</code> - Lấy danh sách FAQ</li>
+                    <li><code class="bg-gray-200 px-2 py-1 rounded">GET /api/testimonials</code> - Lấy danh sách lời chứng thực</li>
+                </ul>
+            </div>
         </div>
-
-        <ul id="notificationList" class="space-y-3"></ul>
     </div>
-
-    <script>
-        const socketUrl = "https://api.wedly.info";
-        // const socketUrl = "https://fuzzy-parakeet-g95vg4wg55jhp7gr-8081.app.github.dev";
-        const socket = io(socketUrl);
-
-        socket.on("connect", () => {
-            console.log("Connected to server, id:", socket.id);
-        });
-
-        socket.on("notify", (notification) => {
-            addNotificationToList(notification);
-        });
-
-        socket.on("deleteNotify", (id) => {
-            const notificationItem = document.getElementById(id);
-            if (notificationItem) {
-                notificationItem.remove();
-            }
-        });
-
-        socket.on("markAsRead", ({ id }) => {
-            const el = document.getElementById(id);
-            if (el) {
-                const statusText = el.querySelector(".notification-status");
-                if (statusText) statusText.textContent = "(đã đọc)";
-                const readBtn = el.querySelector(".read-btn");
-                if (readBtn) readBtn.remove();
-            }
-        });
-
-        // Random notifications array
-        const randomMessages = [
-            { message: "Khóa học 'Lập trình JavaScript cơ bản' đã được mở thành công.", type: "success" },
-            { message: "Khóa học 'Dự án React cuối khóa' đã được hoàn thành và gửi kết quả.", type: "success" },
-            { message: "Khóa học 'Node.js nâng cao' sắp hết hạn đăng ký. Đừng bỏ lỡ!", type: "warning" },
-            { message: "Khóa học 'Thiết kế web với Figma' chưa đủ học viên để mở lớp.", type: "warning" },
-            { message: "Lỗi hệ thống: Không thể tải thông tin khóa học từ cơ sở dữ liệu.", type: "error" },
-            { message: "Khóa học 'Lập trình iOS' đã gặp sự cố trong quá trình cập nhật thông tin.", type: "error" },
-            { message: "Học viên 'Nguyễn Văn A' đã đăng ký khóa học 'Lập trình Frontend'.", type: "success" },
-            { message: "Học viên 'Trần Thị B' đã hoàn thành bài kiểm tra cuối khóa 'JavaScript cơ bản'.", type: "success" },
-            { message: "Học viên 'Nguyễn Thị C' đã bỏ qua bài kiểm tra trong khóa học 'React'.", type: "warning" },
-            { message: "Học viên 'Lê Minh D' chưa xác nhận email để hoàn tất đăng ký.", type: "warning" },
-            { message: "Lỗi hệ thống: Không thể đăng ký học viên vào khóa học 'Dự án thực tế'.", type: "error" },
-            { message: "Học viên 'Phạm Văn E' đã gặp lỗi trong quá trình thanh toán.", type: "error" },
-            { message: "Thanh toán cho khóa học 'Lập trình Python' đã thành công.", type: "success" },
-            { message: "Học viên 'Vũ Hoàng G' đã hoàn tất thanh toán khóa học 'Web Design'.", type: "success" },
-            { message: "Có một giao dịch thanh toán chưa hoàn tất cho học viên 'Đặng Tuấn H'.", type: "warning" },
-            { message: "Cảnh báo: Học viên 'Lê Minh K' đã hủy thanh toán cho khóa học 'React'.", type: "warning" },
-            { message: "Lỗi thanh toán: Không thể xử lý thẻ tín dụng của học viên 'Bùi Minh T'.", type: "error" },
-            { message: "Lỗi hệ thống: Giao dịch thanh toán cho khóa học 'Backend with Node.js' không thành công.", type: "error" },
-            { message: "Hệ thống đã được nâng cấp thành công lên phiên bản mới nhất.", type: "info" },
-            { message: "Dữ liệu hệ thống đã được sao lưu vào lúc 3:00 AM.", type: "info" },
-            { message: "Lỗi hệ thống: Dịch vụ gửi email tạm thời không khả dụng.", type: "error" },
-            { message: "Lỗi hệ thống: Máy chủ của chúng tôi đang gặp sự cố và sẽ sớm được khôi phục.", type: "error" },
-            { message: "Cảnh báo khẩn cấp: Hệ thống phát hiện sự cố bảo mật nghiêm trọng và đang được xử lý.", type: "error" },
-            { message: "Hệ thống đang bảo trì và sẽ trở lại trong vòng 30 phút.", type: "info" },
-        ];
-
-        // Click event for the "notifyBtn"
-        document.getElementById("notifyBtn").addEventListener("click", async () => {
-            const randomNotification = randomMessages[Math.floor(Math.random() * randomMessages.length)];
-            const response = await fetch('/api/notifications', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(randomNotification),
-            });
-            const data = await response.json();
-            console.log("Notification created:", data);
-        });
-
-        // Function to fetch notifications and display them
-        async function getNotifications() {
-            const response = await fetch('/api/notifications');
-            const result = await response.json();
-            const notifications = result.data || [];
-            const notificationList = document.getElementById("notificationList");
-            notificationList.innerHTML = '';
-            notifications.reverse().forEach(notification => {
-                addNotificationToList(notification);
-            });
-        }
-
-        getNotifications();
-
-        // Delete notification
-        async function deleteNotification(id) {
-            if (!confirm("Bạn có chắc chắn muốn xoá thông báo này không?")) return;
-            try {
-                const response = await fetch(`/api/notifications/${id}`, { method: 'DELETE' });
-                const data = await response.json();
-                if (data.success || data.status === 'success') {
-                    socket.emit("deleteNotify", id);
-                    const notificationItem = document.getElementById(id);
-                    if (notificationItem) notificationItem.remove();
-                } else {
-                    console.error("Xóa thất bại:", data.message);
-                }
-            } catch (error) {
-                console.error("Lỗi khi xóa thông báo:", error);
-            }
-        }
-
-        // Mark notification as read
-        async function markAsRead(id) {
-            try {
-                const response = await fetch(`/api/notifications/${id}/read`, { method: 'PATCH' });
-                const data = await response.json();
-                if (data.status === 'success') {
-                    socket.emit("markAsRead", { id });
-
-                    const item = document.getElementById(id);
-                    if (item) {
-                        const status = item.querySelector(".notification-status");
-                        if (status) status.textContent = "(đã đọc)";
-                        const readBtn = item.querySelector(".read-btn");
-                        if (readBtn) readBtn.remove();
-                    }
-                }
-            } catch (error) {
-                console.error("Lỗi khi đánh dấu đã đọc:", error);
-            }
-        }
-
-        // Function to add notification to the list
-        function addNotificationToList(notification) {
-            const notificationList = document.getElementById("notificationList");
-            const li = document.createElement("li");
-            li.id = notification._id;
-            li.className =
-                getNotificationClass(notification.type) +
-                " flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 rounded shadow border gap-2";
-
-            const isRead = notification.status === 'read';
-
-            li.innerHTML = `
-        <span>
-          <strong>${notification.type.toUpperCase()}</strong>: ${notification.message}
-          <em class="notification-status text-xs text-gray-600 ml-1">(${notification.status || "mới"})</em>
-        </span>
-        <div class="flex gap-2 justify-end sm:justify-start">
-          ${!isRead
-                    ? `<button class="read-btn bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm" onclick="markAsRead('${notification._id}')">Đã đọc</button>`
-                    : ''
-                }
-          <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm" onclick="deleteNotification('${notification._id}')">Xóa</button>
-        </div>
-      `;
-
-            notificationList.prepend(li);
-        }
-
-        // Function to get the CSS class based on notification type
-        function getNotificationClass(type) {
-            switch (type) {
-                case 'info':
-                    return 'bg-blue-100 text-blue-800 border-blue-300';
-                case 'success':
-                    return 'bg-green-100 text-green-800 border-green-300';
-                case 'warning':
-                    return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-                case 'error':
-                    return 'bg-red-100 text-red-800 border-red-300';
-                default:
-                    return 'bg-gray-100 text-gray-800 border-gray-300';
-            }
-        }
-    </script>
 </body>
-
 </html>

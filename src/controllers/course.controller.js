@@ -1,6 +1,20 @@
 const Course = require('../models/course.model');
 const Chapter = require('../models/chapter.model');
 const Lesson = require('../models/lesson.model');
+const Item = require('../models/item.model');
+
+// Helper functions for duration calculation
+function formatDuration(totalSeconds) {
+    if (totalSeconds === 0) return '00:00';
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours > 0) {
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    } else {
+        return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+}
 
 
 exports.getAllCourses = async (request, reply) => {
@@ -182,7 +196,23 @@ exports.getCourseBySlug = async (req, reply) => {
             chapters.map(async (chapter) => {
                 const lessons = await Lesson.find({ chapterId: chapter._id })
                     .sort({ order: 1 })
-                    .select("title order duration videoUrl");
+                    .select("title order duration videoUrl isPreviewAllowed type");
+
+                // Collect video URLs for type 'video' to fetch durations from Items
+                const videoUrls = lessons.filter(lesson => lesson.type === 'video').map(lesson => lesson.videoUrl);
+                const items = videoUrls.length > 0 ? await Item.find({ url: { $in: videoUrls } }).select('url duration') : [];
+                const itemDurationMap = new Map(items.map(item => [item.url, item.duration]));
+
+                // Assign durations to lessons
+                const lessonsWithDuration = lessons.map(lesson => {
+                    if (lesson.type === 'video' && itemDurationMap.has(lesson.videoUrl)) {
+                        lesson.duration = itemDurationMap.get(lesson.videoUrl);
+                    }
+                    return lesson;
+                });
+
+                const totalSeconds = lessonsWithDuration.reduce((sum, lesson) => sum + (lesson.duration || 0), 0);
+                const totalDuration = formatDuration(totalSeconds);
 
                 return {
                     _id: chapter._id,
@@ -190,7 +220,8 @@ exports.getCourseBySlug = async (req, reply) => {
                     description: chapter.description,
                     order: chapter.order,
                     lessonCount: lessons.length,
-                    lessons,
+                    totalDuration,
+                    lessons: lessonsWithDuration,
                 };
             })
         );
@@ -305,7 +336,10 @@ exports.duplicateCourse = async (req, reply) => {
                     title: oldLesson.title,
                     content: oldLesson.content,
                     videoUrl: oldLesson.videoUrl,
+                    duration: oldLesson.duration,
+                    type: oldLesson.type,
                     order: oldLesson.order,
+                    isPreviewAllowed: oldLesson.isPreviewAllowed,
                 });
                 await newLesson.save();
             }
