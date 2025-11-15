@@ -4,17 +4,7 @@ const Lesson = require('../models/lesson.model');
 const Item = require('../models/item.model');
 
 // Helper functions for duration calculation
-function formatDuration(totalSeconds) {
-    if (totalSeconds === 0) return '00:00';
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    if (hours > 0) {
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    } else {
-        return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }
-}
+// Removed formatDuration as we now return raw seconds
 
 
 exports.getAllCourses = async (request, reply) => {
@@ -68,18 +58,40 @@ exports.getAllCourses = async (request, reply) => {
             query.topics = { $in: [topic] };
         }
 
-        // Xử lý sort
-        const sortOrder = sort === 'asc' ? 1 : -1;
-        const sortObj = { [sortBy]: sortOrder };
+        // Xử lý sort - Ưu tiên updatedAt mới nhất, rồi createdAt mới nhất
+        const sortObj = { updatedAt: -1, createdAt: -1 };
 
         // Thực hiện query
         const courses = await Course.find(query)
             .skip(skip)
             .limit(pageSize)
             .sort(sortObj)
-            .populate('topics', 'name slug')
+            .select('title slug shortDescription thumbnail originalPrice salePrice isPublished status category instructors createdAt updatedAt label')
             .populate('instructors', 'fullName avatar')
             .populate('category', 'name slug');
+
+        // Tính totalDuration cho mỗi course
+        const coursesWithDuration = await Promise.all(courses.map(async (course) => {
+            const chapters = await Chapter.find({ courseId: course._id });
+            const chapterIds = chapters.map(ch => ch._id);
+            const lessons = await Lesson.find({ chapterId: { $in: chapterIds } }).select("duration type videoUrl");
+
+            // Collect video URLs for type 'video' to fetch durations from Items
+            const videoUrls = lessons.filter(lesson => lesson.type === 'video').map(lesson => lesson.videoUrl);
+            const items = videoUrls.length > 0 ? await Item.find({ url: { $in: videoUrls } }).select('url duration') : [];
+            const itemDurationMap = new Map(items.map(item => [item.url, item.duration]));
+
+            // Assign durations to lessons
+            const lessonsWithDuration = lessons.map(lesson => {
+                if (lesson.type === 'video' && itemDurationMap.has(lesson.videoUrl)) {
+                    lesson.duration = itemDurationMap.get(lesson.videoUrl);
+                }
+                return lesson;
+            });
+
+            const totalSeconds = lessonsWithDuration.reduce((sum, lesson) => sum + (lesson.duration || 0), 0);
+            return { ...course.toObject(), duration: totalSeconds };
+        }));
 
         const totalCourses = await Course.countDocuments(query);
         const totalPages = Math.ceil(totalCourses / pageSize);
@@ -87,7 +99,7 @@ exports.getAllCourses = async (request, reply) => {
         reply.send({
             status: 'success',
             message: 'Courses retrieved successfully',
-            data: courses,
+            data: coursesWithDuration,
             pagination: {
                 currentPage: pageNumber,
                 totalPages,
@@ -100,7 +112,7 @@ exports.getAllCourses = async (request, reply) => {
                 status: status || null,
                 category: category || null,
                 topic: topic || null,
-                sort: { by: sortBy, order: sort }
+                sort: 'updatedAt desc, createdAt desc' // Mô tả sort mặc định
             }
         });
     } catch (error) {
@@ -208,11 +220,14 @@ exports.getCourseBySlug = async (req, reply) => {
                     if (lesson.type === 'video' && itemDurationMap.has(lesson.videoUrl)) {
                         lesson.duration = itemDurationMap.get(lesson.videoUrl);
                     }
+                    // Only include videoUrl if preview is allowed
+                    if (!lesson.isPreviewAllowed) {
+                        lesson.videoUrl = null;
+                    }
                     return lesson;
                 });
 
                 const totalSeconds = lessonsWithDuration.reduce((sum, lesson) => sum + (lesson.duration || 0), 0);
-                const totalDuration = formatDuration(totalSeconds);
 
                 return {
                     _id: chapter._id,
@@ -220,17 +235,21 @@ exports.getCourseBySlug = async (req, reply) => {
                     description: chapter.description,
                     order: chapter.order,
                     lessonCount: lessons.length,
-                    totalDuration,
+                    duration: totalSeconds,
                     lessons: lessonsWithDuration,
                 };
             })
         );
+
+        // Tính tổng duration của toàn bộ khóa học
+        const totalCourseDuration = chaptersWithLessons.reduce((sum, chapter) => sum + (chapter.duration || 0), 0);
 
         reply.send({
             status: 'success',
             message: 'Course retrieved successfully',
             data: {
                 ...course.toObject(),
+                duration: totalCourseDuration,
                 chapters: chaptersWithLessons,
             }
         });
