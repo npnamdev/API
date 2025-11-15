@@ -1,17 +1,11 @@
 const controller = require('../controllers/cart.controller');
 
 async function cartRoutes(fastify, options) {
-    // Giả sử có auth middleware
-    fastify.addHook('preHandler', async (request, reply) => {
-        // Kiểm tra auth, set request.user
-        // Nếu chưa có, bỏ qua hoặc thêm logic
-    });
-
-    fastify.get('/carts', controller.getCart);
-    fastify.post('/carts', controller.addToCart);
-    fastify.delete('/carts/:courseId', controller.removeFromCart);
-    fastify.delete('/carts', controller.clearCart);
-    fastify.post('/carts/checkout', controller.checkout);
+    fastify.get('/carts', { preHandler: [fastify.authenticate] }, controller.getCart);
+    fastify.post('/carts', { preHandler: [fastify.authenticate] }, controller.addToCart);
+    fastify.delete('/carts/:courseId', { preHandler: [fastify.authenticate] }, controller.removeFromCart);
+    fastify.delete('/carts', { preHandler: [fastify.authenticate] }, controller.clearCart);
+    fastify.post('/carts/checkout', { preHandler: [fastify.authenticate] }, controller.checkout);
 }
 
 module.exports = cartRoutes;
