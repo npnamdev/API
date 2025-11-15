@@ -35,8 +35,8 @@ const courseSchema = new mongoose.Schema({
     duration: { type: String },                              /// Thời lượng tổng (vd: "10 giờ")
     language: {
         type: String,
-        enum: ['vi', 'en', 'jp', 'ko', 'fr', 'de', 'zh'],
-        default: 'vi'
+        enum: ['Tiếng Việt', 'Tiếng Anh', 'Tiếng Nhật', 'Tiếng Hàn', 'Tiếng Pháp', 'Tiếng Đức', 'Tiếng Trung'],
+        default: 'Tiếng Việt'
     },
 
 
@@ -50,6 +50,7 @@ const courseSchema = new mongoose.Schema({
     accessDuration: { type: Number, default: null },         /// Số ngày sử dụng (null = vĩnh viễn)
 
     label: { type: String, default: null }, // Nhãn đơn
+    introVideo: { type: String }, // Video giới thiệu (URL hoặc embed code)
 
     type: {
         type: String,

@@ -1,4 +1,5 @@
 const ActivationCode = require('../models/activation.model');
+const Enrollment = require('../models/enrollment.model');
 
 exports.getAllActivationCodes = async (req, reply) => {
     try {
@@ -82,5 +83,84 @@ exports.deleteActivationCode = async (req, reply) => {
     const deleted = await ActivationCode.findByIdAndDelete(req.params.id);
     if (!deleted) return reply.code(404).send({ message: 'Activation code not found' });
     reply.send({ message: 'Activation code deleted successfully' });
+};
+
+exports.activateCourse = async (req, reply) => {
+    try {
+        const { code, userId } = req.body;
+
+        if (!code || !userId) {
+            return reply.code(400).send({
+                status: 'error',
+                message: 'Code and userId are required'
+            });
+        }
+
+        // Tìm mã kích hoạt
+        const activation = await ActivationCode.findOne({
+            code,
+            isActive: true,
+            expiresAt: { $gt: new Date() },
+            used: { $lt: this.quantity } // Chưa dùng hết
+        }).populate('course', 'title');
+
+        if (!activation) {
+            return reply.code(404).send({
+                status: 'error',
+                message: 'Invalid or expired activation code'
+            });
+        }
+
+        // Kiểm tra user đã enroll course chưa
+        const existingEnrollment = await Enrollment.findOne({
+            user: userId,
+            course: activation.course._id
+        });
+
+        if (existingEnrollment) {
+            return reply.code(400).send({
+                status: 'error',
+                message: 'User already enrolled in this course'
+            });
+        }
+
+        // Tạo enrollment
+        const enrollmentExpiresAt = new Date();
+        enrollmentExpiresAt.setDate(enrollmentExpiresAt.getDate() + activation.usageDays);
+
+        const newEnrollment = new Enrollment({
+            user: userId,
+            course: activation.course._id,
+            status: 'active',
+            expiresAt: enrollmentExpiresAt
+        });
+
+        await newEnrollment.save();
+
+        // Cập nhật activation code
+        activation.used += 1;
+        if (activation.used >= activation.quantity) {
+            activation.status = 'used';
+            if (activation.codeType === 'single') {
+                activation.isActive = false;
+            }
+        }
+        await activation.save();
+
+        reply.send({
+            status: 'success',
+            message: 'Course activated successfully',
+            data: {
+                enrollment: newEnrollment,
+                course: activation.course
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        reply.code(500).send({
+            status: 'error',
+            message: 'Activation failed'
+        });
+    }
 };
 
