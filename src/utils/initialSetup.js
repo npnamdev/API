@@ -46,6 +46,7 @@ async function initializeData() {
             { name: 'READ_AUTOMATION', label: 'Xem tự động hóa', group: 'Automation', description: 'Cho phép xem tự động hóa', order: 2 },
             { name: 'UPDATE_AUTOMATION', label: 'Cập nhật tự động hóa', group: 'Automation', description: 'Cho phép cập nhật tự động hóa', order: 3 },
             { name: 'DELETE_AUTOMATION', label: 'Xoá tự động hóa', group: 'Automation', description: 'Cho phép xoá tự động hóa', order: 4 },
+            { name: 'RUN_AUTOMATION', label: 'Chạy tự động hóa', group: 'Automation', description: 'Cho phép chạy tự động hóa', order: 5 },
 
             // Category permissions
             { name: 'CREATE_CATEGORY', label: 'Tạo danh mục', group: 'Category', description: 'Cho phép tạo danh mục mới', order: 1 },

@@ -6,6 +6,7 @@ const sendEmail = require('../utils/mailer');
 const Notification = require('../models/notification.model');
 const verifyEmailTemplate = require('../templates/verifyEmailTemplate');
 const UAParser = require('ua-parser-js');
+const AutomationService = require('../services/automation.service');
 
 
 exports.login = async (request, reply) => {
@@ -168,6 +169,15 @@ exports.register = async (request, reply) => {
 
         await notification.save();
         request.server.io.emit('notify', notification);
+
+        // Trigger automations for user creation
+        await AutomationService.triggerAutomation('user_created', {
+            userId: user._id,
+            username: user.username,
+            email: user.email,
+            fullName: user.fullName,
+            role: userRole.name
+        }, request.server);
 
         reply.code(201).send({ message: 'Đăng ký thành công. Vui lòng kiểm tra email để xác minh trong 5 phút.' });
     } catch (err) {
