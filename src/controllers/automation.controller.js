@@ -51,13 +51,16 @@ exports.createAutomation = async (request, reply) => {
     try {
         const { name, description, triggers, conditionLogic, conditions, actions, enabled } = request.body;
 
+        // Sanitize actions config based on type
+        const sanitizedActions = sanitizeActions(actions);
+
         const automation = new Automation({
             name,
             description,
             triggers,
             conditionLogic,
             conditions,
-            actions,
+            actions: sanitizedActions,
             enabled
         });
 
@@ -72,6 +75,11 @@ exports.updateAutomation = async (request, reply) => {
     try {
         const { id } = request.params;
         const updates = request.body;
+
+        // Sanitize actions config based on type
+        if (updates.actions && Array.isArray(updates.actions)) {
+            updates.actions = sanitizeActions(updates.actions);
+        }
 
         const automation = await Automation.findOneAndUpdate(
             { _id: id },
@@ -193,4 +201,29 @@ async function httpRequestAction(config) {
         data: body
     };
     await axios(options);
+}
+
+// Sanitize actions config based on type
+function sanitizeActions(actions) {
+    const actionConfigs = {
+        send_email: ['to', 'subject', 'text', 'html'],
+        http_request: ['method', 'url', 'headers', 'body']
+    };
+
+    return actions.map(action => {
+        if (action.type && actionConfigs[action.type]) {
+            const allowedKeys = actionConfigs[action.type];
+            const sanitizedConfig = {};
+            allowedKeys.forEach(key => {
+                if (action.config && action.config[key] !== undefined) {
+                    sanitizedConfig[key] = action.config[key];
+                }
+            });
+            return {
+                ...action,
+                config: sanitizedConfig
+            };
+        }
+        return action;
+    });
 }
