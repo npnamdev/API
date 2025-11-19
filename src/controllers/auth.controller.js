@@ -169,16 +169,6 @@ exports.register = async (request, reply) => {
 
         await notification.save();
         request.server.io.emit('notify', notification);
-
-        // Trigger automations for user creation
-        await AutomationService.triggerAutomation('user_created', {
-            userId: user._id,
-            username: user.username,
-            email: user.email,
-            fullName: user.fullName,
-            role: userRole.name
-        }, request.server);
-
         reply.code(201).send({ message: 'Đăng ký thành công. Vui lòng kiểm tra email để xác minh trong 5 phút.' });
     } catch (err) {
         reply.code(500).send({ message: err.message });
