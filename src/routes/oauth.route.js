@@ -58,7 +58,7 @@ module.exports = async function (fastify, opts) {
       });
 
 
-      const targetOrigin = process.env.FRONTEND_URL || 'https://wedly.info';
+      const targetOrigin = process.env.FRONTEND_URL || 'https://new.wedly.info';
       return reply
         .type('text/html')
         .send(`
