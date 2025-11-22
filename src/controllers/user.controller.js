@@ -220,6 +220,53 @@ exports.deleteUserById = async (request, reply) => {
     }
 };
 
+exports.deleteMultipleUsers = async (request, reply) => {
+    try {
+        const { ids } = request.body;
+
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return reply.code(400).send({ status: 'error', message: 'Invalid or empty ids array' });
+        }
+
+        // Find users to check for admin
+        const users = await User.find({ _id: { $in: ids } });
+
+        if (users.length === 0) {
+            return reply.code(404).send({ status: 'error', message: 'No users found with provided ids' });
+        }
+
+        // Filter out admin user
+        const deletableUsers = users.filter(user => user.email !== process.env.ADMIN_EMAIL);
+        const adminUsers = users.filter(user => user.email === process.env.ADMIN_EMAIL);
+
+        if (deletableUsers.length === 0) {
+            return reply.code(403).send({
+                status: 'error',
+                message: `All provided users include the admin user "${process.env.ADMIN_EMAIL}" which cannot be deleted.`,
+            });
+        }
+
+        // Delete the allowed users
+        const deletableIds = deletableUsers.map(user => user._id);
+        const deleteResult = await User.deleteMany({ _id: { $in: deletableIds } });
+
+        const message = adminUsers.length > 0
+            ? `Deleted ${deleteResult.deletedCount} users. Skipped ${adminUsers.length} admin user(s).`
+            : `Deleted ${deleteResult.deletedCount} users successfully.`;
+
+        reply.send({
+            status: 'success',
+            message,
+            data: {
+                deletedCount: deleteResult.deletedCount,
+                skippedAdmins: adminUsers.length,
+            },
+        });
+    } catch (error) {
+        reply.internalServerError(error.message || 'Internal Server Error');
+    }
+};
+
 exports.getMe = async (request, reply) => {
     console.log("request", request.user)
     try {

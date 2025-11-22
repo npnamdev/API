@@ -7,6 +7,7 @@ async function userRoutes(fastify) {
     fastify.get('/users/:id', { preHandler: [fastify.authenticate, checkPermission('READ_USER')] }, userController.getUserById);
     fastify.put('/users/:id', { preHandler: [fastify.authenticate, checkPermission('UPDATE_USER')] }, userController.updateUserById);
     fastify.delete('/users/:id', { preHandler: [fastify.authenticate, checkPermission('DELETE_USER')] }, userController.deleteUserById);
+    fastify.delete('/users', { preHandler: [fastify.authenticate, checkPermission('DELETE_USER')] }, userController.deleteMultipleUsers);
     fastify.get('/users/me', { preHandler: [fastify.authenticate] }, userController.getMe);
 }
 

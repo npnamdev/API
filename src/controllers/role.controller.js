@@ -169,6 +169,56 @@ exports.deleteRoleById = async (request, reply) => {
     }
 };
 
+exports.deleteMultipleRoles = async (request, reply) => {
+    try {
+        const { ids } = request.body;
+
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return reply.code(400).send({ status: 'error', message: 'Invalid or empty ids array' });
+        }
+
+        // Find roles to check for protected ones
+        const roles = await Role.find({ _id: { $in: ids } });
+
+        if (roles.length === 0) {
+            return reply.code(404).send({ status: 'error', message: 'No roles found with provided ids' });
+        }
+
+        // Filter out protected roles (admin and user)
+        const deletableRoles = roles.filter(role => role.name !== 'admin' && role.name !== 'user');
+        const protectedRoles = roles.filter(role => role.name === 'admin' || role.name === 'user');
+
+        if (deletableRoles.length === 0) {
+            return reply.code(403).send({
+                status: 'error',
+                message: 'All provided roles are protected and cannot be deleted.',
+            });
+        }
+
+        // Delete the allowed roles
+        const deletableIds = deletableRoles.map(role => role._id);
+        const deleteResult = await Role.deleteMany({ _id: { $in: deletableIds } });
+
+        const message = protectedRoles.length > 0
+            ? `Deleted ${deleteResult.deletedCount} roles. Skipped ${protectedRoles.length} protected role(s).`
+            : `Deleted ${deleteResult.deletedCount} roles successfully.`;
+
+        reply.send({
+            status: 'success',
+            message,
+            data: {
+                deletedCount: deleteResult.deletedCount,
+                skippedProtected: protectedRoles.length,
+            },
+        });
+    } catch (error) {
+        reply.code(500).send({
+            status: 'error',
+            message: error.message,
+        });
+    }
+};
+
 exports.assignPermissionsToRole = async (request, reply) => {
     const { roleId } = request.params;
     const { permissionIds } = request.body;

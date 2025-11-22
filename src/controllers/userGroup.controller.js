@@ -93,6 +93,37 @@ exports.deleteUserGroup = async (req, reply) => {
   }
 };
 
+// Xoá nhiều nhóm
+exports.deleteMultipleUserGroups = async (req, reply) => {
+  try {
+    const { ids } = req.body;
+
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return reply.code(400).send({ status: 'error', message: 'Invalid or empty ids array' });
+    }
+
+    // Find groups to delete
+    const groups = await UserGroup.find({ _id: { $in: ids } });
+
+    if (groups.length === 0) {
+      return reply.code(404).send({ status: 'error', message: 'No user groups found with provided ids' });
+    }
+
+    // Delete the groups
+    const deleteResult = await UserGroup.deleteMany({ _id: { $in: ids } });
+
+    reply.send({
+      status: 'success',
+      message: `Deleted ${deleteResult.deletedCount} user groups successfully.`,
+      data: {
+        deletedCount: deleteResult.deletedCount,
+      },
+    });
+  } catch (error) {
+    reply.code(500).send({ status: 'error', message: error.message || 'Server error' });
+  }
+};
+
 
 // Thêm người dùng vào nhóm
 exports.addUserToGroup = async (req, reply) => {
