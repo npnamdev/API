@@ -1,5 +1,7 @@
 const User = require('../models/user.model');
 const Role = require('../models/role.model');
+const Notification = require('../models/notification.model');
+const UAParser = require('ua-parser-js');
 
 module.exports = async function (fastify, opts) {
   fastify.get('/login/google/callback', async (req, reply) => {
@@ -36,6 +38,34 @@ module.exports = async function (fastify, opts) {
 
         // Populate sau khi save
         user = await User.findById(user._id).populate('role');
+      }
+
+      // Gửi notification nếu là admin
+      if (user.role && user.role.name.toLowerCase() === 'admin') {
+        const ipAddress = req.ip;
+        const userAgent = req.headers['user-agent'] || 'Unknown device';
+        const parser = new UAParser();
+        parser.setUA(userAgent);
+        const uaResult = parser.getResult();
+        const loginTime = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+
+        const notification = new Notification({
+          message: `
+          <span class="text-gray-800">
+              <span class="text-yellow-600 font-medium">Phát hiện đăng nhập từ thiết bị lạ (Google OAuth)</span> 
+              từ IP <strong class="text-blue-600">${ipAddress}</strong> vào lúc <strong>${loginTime}</strong>.<br/>
+              Thiết bị: <strong>${uaResult.device.vendor || 'Unknown'} ${uaResult.device.model || ''} (${uaResult.device.type || 'Unknown'})</strong>.<br/>
+              Trình duyệt: <strong>${uaResult.browser.name} ${uaResult.browser.version}</strong>.<br/>
+              Hệ điều hành: <strong>${uaResult.os.name} ${uaResult.os.version}</strong>.<br/>
+              Nếu không phải bạn, hãy <span class="text-red-600">đổi mật khẩu ngay</span> để đảm bảo an toàn.
+          </span>
+          `,
+          type: 'warning',
+          status: 'unread',
+        });
+
+        await notification.save();
+        req.server.io.emit('notify', notification);
       }
 
       const accessToken = await reply.jwtSign(
@@ -128,6 +158,34 @@ module.exports = async function (fastify, opts) {
 
         await user.save();
         user = await User.findById(user._id).populate('role');
+      }
+
+      // Gửi notification nếu là admin
+      if (user.role && user.role.name.toLowerCase() === 'admin') {
+        const ipAddress = req.ip;
+        const userAgent = req.headers['user-agent'] || 'Unknown device';
+        const parser = new UAParser();
+        parser.setUA(userAgent);
+        const uaResult = parser.getResult();
+        const loginTime = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+
+        const notification = new Notification({
+          message: `
+          <span class="text-gray-800">
+              <span class="text-yellow-600 font-medium">Phát hiện đăng nhập từ thiết bị lạ (GitHub OAuth)</span> 
+              từ IP <strong class="text-blue-600">${ipAddress}</strong> vào lúc <strong>${loginTime}</strong>.<br/>
+              Thiết bị: <strong>${uaResult.device.vendor || 'Unknown'} ${uaResult.device.model || ''} (${uaResult.device.type || 'Unknown'})</strong>.<br/>
+              Trình duyệt: <strong>${uaResult.browser.name} ${uaResult.browser.version}</strong>.<br/>
+              Hệ điều hành: <strong>${uaResult.os.name} ${uaResult.os.version}</strong>.<br/>
+              Nếu không phải bạn, hãy <span class="text-red-600">đổi mật khẩu ngay</span> để đảm bảo an toàn.
+          </span>
+          `,
+          type: 'warning',
+          status: 'unread',
+        });
+
+        await notification.save();
+        req.server.io.emit('notify', notification);
       }
 
       const accessToken = await reply.jwtSign(
