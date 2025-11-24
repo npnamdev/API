@@ -80,3 +80,16 @@ exports.deleteTopic = async (req, reply) => {
     reply.code(400).send({ error: err.message });
   }
 };
+
+exports.deleteMultipleTopics = async (req, reply) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return reply.code(400).send({ error: 'IDs must be a non-empty array' });
+    }
+    const result = await Topic.deleteMany({ _id: { $in: ids } });
+    reply.send({ message: `${result.deletedCount} topics deleted successfully` });
+  } catch (err) {
+    reply.code(400).send({ error: err.message });
+  }
+};

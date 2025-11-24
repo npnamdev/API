@@ -6,6 +6,7 @@ async function contactRoutes(fastify, options) {
     fastify.get('/contacts/:id', contactController.getContactById);
     fastify.put('/contacts/:id', contactController.updateContact);
     fastify.delete('/contacts/:id', contactController.deleteContact);
+    fastify.delete('/contacts', contactController.deleteMultipleContacts);
 }
 
 module.exports = contactRoutes;

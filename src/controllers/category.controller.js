@@ -81,3 +81,16 @@ exports.deleteCategory = async (req, reply) => {
     reply.code(400).send({ error: err.message });
   }
 };
+
+exports.deleteMultipleCategories = async (req, reply) => {
+  try {
+    const { ids } = req.body;
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return reply.code(400).send({ error: 'IDs must be a non-empty array' });
+    }
+    const result = await Category.deleteMany({ _id: { $in: ids } });
+    reply.send({ message: `${result.deletedCount} categories deleted successfully` });
+  } catch (err) {
+    reply.code(400).send({ error: err.message });
+  }
+};

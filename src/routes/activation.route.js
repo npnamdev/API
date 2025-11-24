@@ -6,6 +6,7 @@ async function activationRoutes(fastify, options) {
     fastify.post('/activation-codes', controller.createActivationCode);
     fastify.put('/activation-codes/:id', controller.updateActivationCode);
     fastify.delete('/activation-codes/:id', controller.deleteActivationCode);
+    fastify.delete('/activation-codes', controller.deleteMultipleActivationCodes);
     fastify.post('/activations/activate', controller.activateCourse);
 }
 

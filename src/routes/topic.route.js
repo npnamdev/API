@@ -6,6 +6,7 @@ async function topicRoutes(fastify, options) {
     fastify.get('/topics/:id', topicController.getTopicById);
     fastify.put('/topics/:id', topicController.updateTopic);
     fastify.delete('/topics/:id', topicController.deleteTopic);
+    fastify.delete('/topics', topicController.deleteMultipleTopics);
 }
 
 module.exports = topicRoutes;

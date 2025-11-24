@@ -92,3 +92,16 @@ exports.deleteContact = async (req, reply) => {
         reply.code(500).send({ error: 'Lỗi khi xóa contact' });
     }
 };
+
+exports.deleteMultipleContacts = async (req, reply) => {
+    try {
+        const { ids } = req.body;
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return reply.code(400).send({ error: 'IDs must be a non-empty array' });
+        }
+        const result = await Contact.deleteMany({ _id: { $in: ids } });
+        reply.send({ message: `${result.deletedCount} contacts deleted successfully` });
+    } catch (error) {
+        reply.code(500).send({ error: error.message });
+    }
+};

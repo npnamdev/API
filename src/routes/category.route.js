@@ -6,6 +6,7 @@ async function categoryRoutes(fastify, options) {
     fastify.get('/categories/:id', categoryController.getCategoryById);
     fastify.put('/categories/:id', categoryController.updateCategory);
     fastify.delete('/categories/:id', categoryController.deleteCategory);
+    fastify.delete('/categories', categoryController.deleteMultipleCategories);
 }
 
 module.exports = categoryRoutes;

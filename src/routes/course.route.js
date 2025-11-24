@@ -9,6 +9,7 @@ async function courseRoutes(fastify, options) {
     fastify.post('/courses/bulk', courseController.createManyCourses);
     fastify.put('/courses/:id', courseController.updateCourse);
     fastify.delete('/courses/:id', courseController.deleteCourse);
+    fastify.delete('/courses', courseController.deleteMultipleCourses);
     fastify.post('/courses/:id/duplicate', courseController.duplicateCourse);
 }
 

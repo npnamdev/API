@@ -85,6 +85,19 @@ exports.deleteActivationCode = async (req, reply) => {
     reply.send({ message: 'Activation code deleted successfully' });
 };
 
+exports.deleteMultipleActivationCodes = async (req, reply) => {
+    try {
+        const { ids } = req.body;
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return reply.code(400).send({ error: 'IDs must be a non-empty array' });
+        }
+        const result = await ActivationCode.deleteMany({ _id: { $in: ids } });
+        reply.send({ message: `${result.deletedCount} activation codes deleted successfully` });
+    } catch (err) {
+        reply.code(400).send({ error: err.message });
+    }
+};
+
 exports.activateCourse = async (req, reply) => {
     try {
         const { code, userId } = req.body;
