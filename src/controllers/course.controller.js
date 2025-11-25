@@ -66,32 +66,7 @@ exports.getAllCourses = async (request, reply) => {
             .skip(skip)
             .limit(pageSize)
             .sort(sortObj)
-            .select('title slug shortDescription thumbnail originalPrice salePrice isPublished status category instructors createdAt updatedAt label')
-            .populate('instructors', 'fullName avatar')
-            .populate('category', 'name slug');
-
-        // Tính totalDuration cho mỗi course
-        const coursesWithDuration = await Promise.all(courses.map(async (course) => {
-            const chapters = await Chapter.find({ courseId: course._id });
-            const chapterIds = chapters.map(ch => ch._id);
-            const lessons = await Lesson.find({ chapterId: { $in: chapterIds } }).select("duration type videoUrl");
-
-            // Collect video URLs for type 'video' to fetch durations from Items
-            const videoUrls = lessons.filter(lesson => lesson.type === 'video').map(lesson => lesson.videoUrl);
-            const items = videoUrls.length > 0 ? await Item.find({ url: { $in: videoUrls } }).select('url duration') : [];
-            const itemDurationMap = new Map(items.map(item => [item.url, item.duration]));
-
-            // Assign durations to lessons
-            const lessonsWithDuration = lessons.map(lesson => {
-                if (lesson.type === 'video' && itemDurationMap.has(lesson.videoUrl)) {
-                    lesson.duration = itemDurationMap.get(lesson.videoUrl);
-                }
-                return lesson;
-            });
-
-            const totalSeconds = lessonsWithDuration.reduce((sum, lesson) => sum + (lesson.duration || 0), 0);
-            return { ...course.toObject(), duration: totalSeconds };
-        }));
+            .select('thumbnail title status isPublished createdAt updatedAt type');
 
         const totalCourses = await Course.countDocuments(query);
         const totalPages = Math.ceil(totalCourses / pageSize);
@@ -99,7 +74,7 @@ exports.getAllCourses = async (request, reply) => {
         reply.send({
             status: 'success',
             message: 'Courses retrieved successfully',
-            data: coursesWithDuration,
+            data: courses,
             pagination: {
                 currentPage: pageNumber,
                 totalPages,

@@ -128,7 +128,7 @@ exports.getAllUsers = async (request, reply) => {
 
         const totalUsers = await User.countDocuments(finalFilter);
         const users = await User.find(finalFilter)
-            .select('fullName email avatarUrl role isActive createdAt updatedAt')
+            .select('fullName email avatarUrl role isVerified createdAt updatedAt')
             .skip(skip)
             .limit(limit)
             .sort({ [sortBy]: sortOrder })

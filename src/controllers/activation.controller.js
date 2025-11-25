@@ -29,7 +29,7 @@ exports.getAllActivationCodes = async (req, reply) => {
             .limit(pageSize)
             .sort({ createdAt: sortOrder })
             .populate('course', 'title')
-            .populate('createdBy', 'name email');
+            .populate('createdBy', 'fullName email');
 
         const total = await ActivationCode.countDocuments(searchQuery);
         const totalPages = Math.ceil(total / pageSize);
@@ -113,11 +113,10 @@ exports.activateCourse = async (req, reply) => {
         const activation = await ActivationCode.findOne({
             code,
             isActive: true,
-            expiresAt: { $gt: new Date() },
-            used: { $lt: this.quantity } // Chưa dùng hết
+            expiresAt: { $gt: new Date() }
         }).populate('course', 'title');
 
-        if (!activation) {
+        if (!activation || activation.used >= activation.quantity) {
             return reply.code(404).send({
                 status: 'error',
                 message: 'Invalid or expired activation code'
