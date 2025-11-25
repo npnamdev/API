@@ -6,6 +6,7 @@ async function automationRoutes(fastify) {
     fastify.post('/automations', automationController.createAutomation);
     fastify.put('/automations/:id', automationController.updateAutomation);
     fastify.delete('/automations/:id', automationController.deleteAutomation);
+    fastify.delete('/automations', automationController.deleteMultipleAutomations);
     fastify.post('/automations/:id/run', automationController.runAutomation);
 }
 

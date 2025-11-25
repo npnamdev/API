@@ -112,6 +112,19 @@ exports.deleteAutomation = async (request, reply) => {
     }
 };
 
+exports.deleteMultipleAutomations = async (request, reply) => {
+    try {
+        const { ids } = request.body;
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return reply.code(400).send({ error: 'IDs must be a non-empty array' });
+        }
+        const result = await Automation.deleteMany({ _id: { $in: ids } });
+        reply.send({ message: `${result.deletedCount} automations deleted successfully` });
+    } catch (error) {
+        reply.code(500).send({ message: 'Error deleting automations', error: error.message });
+    }
+};
+
 exports.runAutomation = async (request, reply) => {
     try {
         const { id } = request.params;

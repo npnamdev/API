@@ -6,10 +6,7 @@ const contactSchema = new mongoose.Schema({
     phone: { type: String, trim: true },
     subject: { type: String, required: true, trim: true },
     message: { type: String, required: true, trim: true },
-    pageUrl: { type: String, trim: true },
     source: { type: String, trim: true },
-    isRead: { type: Boolean, default: false },
-    status: { type: String, enum: ['new', 'processing', 'done'], default: 'new' },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Contact', contactSchema);

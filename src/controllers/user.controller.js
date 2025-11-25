@@ -128,11 +128,11 @@ exports.getAllUsers = async (request, reply) => {
 
         const totalUsers = await User.countDocuments(finalFilter);
         const users = await User.find(finalFilter)
-            .select('-password')
+            .select('fullName email avatarUrl role isActive createdAt updatedAt')
             .skip(skip)
             .limit(limit)
             .sort({ [sortBy]: sortOrder })
-            .populate({ path: 'role', select: 'label' });
+            .populate({ path: 'role', select: 'label -_id' });
 
         return reply.send({
             success: true,
@@ -268,9 +268,8 @@ exports.deleteMultipleUsers = async (request, reply) => {
 };
 
 exports.getMe = async (request, reply) => {
-    console.log("request", request.user)
     try {
-        const user = await User.findById(request.user.id).select('-password').populate({ path: 'role', select: 'name' });
+        const user = await User.findById(request.user.id).select('-password').populate({ path: 'role', select: 'name' }).lean();
         return reply.send(user);
     } catch (error) {
         reply.internalServerError(error.message || 'Internal Server Error');
