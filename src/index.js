@@ -21,7 +21,7 @@ fastify.register(require('@fastify/oauth2'), {
   callbackUri: process.env.GOOGLE_CALLBACK_URI,
   callbackUriParams: { access_type: 'offline', prompt: 'select_account' },
   pkce: 'S256',
-})
+});
 
 fastify.register(require('@fastify/oauth2'), {
   name: 'githubOAuth2',
@@ -136,4 +136,4 @@ fastify.get('/cloudinary-usage', async (req, reply) => {
     fastify.log.error(err);
     process.exit(1);
   }
-})()
+})();

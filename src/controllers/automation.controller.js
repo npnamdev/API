@@ -1,6 +1,4 @@
 const Automation = require('../models/automation.model');
-const axios = require('axios');
-const Notification = require('../models/notification.model');
 
 exports.getAllAutomations = async (request, reply) => {
     try {
@@ -139,97 +137,15 @@ exports.runAutomation = async (request, reply) => {
             return reply.code(400).send({ message: 'Automation is disabled' });
         }
 
-        // Increment run count
-        await automation.incrementRunCount();
+        // Use AutomationService for consistency
+        const AutomationService = require('../services/automation.service');
+        await AutomationService.executeAutomation(automation, request.body || {}, request.server);
 
-        // Check conditions
-        let conditionMet = await checkConditions(automation.conditions, automation.conditionLogic);
-
-        if (conditionMet) {
-            // Execute actions
-            await executeActions(automation.actions, request.server);
-            await automation.incrementSuccessCount();
-        } else {
-            await automation.incrementFailureCount();
-        }
-
-        reply.send({ message: 'Automation executed', success: conditionMet });
+        reply.send({ message: 'Automation executed', success: true });
     } catch (error) {
         reply.code(500).send({ message: 'Error running automation', error: error.message });
     }
 };
-
-// Helper function to check conditions
-async function checkConditions(conditions, logic) {
-    if (conditions.length === 0) return true;
-
-    const results = [];
-    for (const condition of conditions) {
-        const result = await evaluateCondition(condition);
-        results.push(result);
-    }
-
-    if (logic === 'AND') {
-        return results.every(r => r);
-    } else {
-        return results.some(r => r);
-    }
-}
-
-// Simple condition evaluation (can be expanded)
-async function evaluateCondition(condition) {
-    // For now, assume conditions are met (placeholder)
-    // In real implementation, you would check against data sources
-    return true;
-}
-
-// Execute actions
-async function executeActions(actions, fastify) {
-    for (const action of actions) {
-        try {
-            if (action.type === 'send_email') {
-                await sendEmailAction(action.config, fastify);
-            } else if (action.type === 'http_request') {
-                await httpRequestAction(action.config);
-            } else if (action.type === 'notification') {
-                await sendNotificationAction(action.config, fastify);
-            }
-        } catch (error) {
-            console.error(`Error executing action ${action.type}:`, error);
-            // Continue with other actions or handle error
-        }
-    }
-}
-
-// Send email action
-async function sendEmailAction(config, fastify) {
-    const { to, subject, text, html } = config;
-    await fastify.sendEmail({ to, subject, text, html });
-}
-
-// HTTP request action
-async function httpRequestAction(config) {
-    const { method = 'GET', url, headers = {}, body } = config;
-    const options = {
-        method,
-        url,
-        headers,
-        data: body
-    };
-    await axios(options);
-}
-
-// Send notification action
-async function sendNotificationAction(config, fastify) {
-    const { message, type = 'info' } = config;
-    const notification = new Notification({
-        message,
-        type
-    });
-
-    await notification.save();
-    fastify.io.emit('notify', notification);
-}
 
 // Sanitize actions config based on type
 function sanitizeActions(actions) {

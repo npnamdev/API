@@ -43,25 +43,34 @@ class AutomationService {
 
     // Check conditions with data context
     static async checkConditions(conditions, logic, data) {
+        console.log('Checking conditions:', { conditions, logic, data });
         if (conditions.length === 0) return true;
 
         const results = [];
         for (const condition of conditions) {
             const result = await this.evaluateCondition(condition, data);
+            console.log('Condition result:', { condition, result, fieldValue: this.getNestedValue(data, condition.field) });
             results.push(result);
         }
 
-        if (logic === 'AND') {
-            return results.every(r => r);
-        } else {
-            return results.some(r => r);
-        }
+        const finalResult = logic === 'AND' ? results.every(r => r) : results.some(r => r);
+        console.log('Final condition result:', { results, logic, finalResult });
+        
+        return finalResult;
     }
 
     // Evaluate condition against data
     static async evaluateCondition(condition, data) {
         const { field, operator, value } = condition;
         const fieldValue = this.getNestedValue(data, field);
+        
+        console.log('Evaluating condition:', {
+            field,
+            operator,
+            expectedValue: value,
+            actualValue: fieldValue,
+            dataReceived: data
+        });
 
         switch (operator) {
             case 'equals':
