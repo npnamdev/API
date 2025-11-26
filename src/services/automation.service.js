@@ -1,4 +1,5 @@
 const Automation = require('../models/automation.model');
+const Notification = require('../models/notification.model');
 
 class AutomationService {
     // Trigger automation based on event type
@@ -101,6 +102,8 @@ class AutomationService {
                     await this.sendEmailAction(action.config, data, fastify);
                 } else if (action.type === 'http_request') {
                     await this.httpRequestAction(action.config, data);
+                } else if (action.type === 'notification') {
+                    await this.sendNotificationAction(action.config, data, fastify);
                 }
             } catch (error) {
                 console.error(`Error executing action ${action.type}:`, error);
@@ -141,6 +144,24 @@ class AutomationService {
         };
 
         await axios(options);
+    }
+
+    // Send notification action
+    static async sendNotificationAction(config, data, fastify) {
+        const { message, type = 'info' } = config;
+
+        // Simple template interpolation
+        const interpolate = (str) => str.replace(/\{\{(\w+)\}\}/g, (match, key) => data[key] || match);
+
+        const interpolatedMessage = interpolate(message);
+
+        const notification = new Notification({
+            message: interpolatedMessage,
+            type
+        });
+
+        await notification.save();
+        fastify.io.emit('notify', notification);
     }
 }
 

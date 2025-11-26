@@ -5,8 +5,7 @@ const TriggerSchema = new mongoose.Schema({
     type: {
         type: String,
         required: true,
-        enum: ['any', 'schedule', 'user_created'],
-        default: 'any'
+        enum: ['login', 'user_deleted'],
     },
     config: { type: Object, default: {} }
 }, { _id: false });
@@ -29,7 +28,7 @@ const ConditionSchema = new mongoose.Schema({
 const ActionSchema = new mongoose.Schema({
     type: {
         type: String,
-        enum: ['send_email', 'http_request'],
+        enum: ['send_email', 'http_request', 'notification'],
         default: null
     },
     config: { type: Object, default: {} },

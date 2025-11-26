@@ -75,6 +75,14 @@ exports.login = async (request, reply) => {
             maxAge: 7 * 24 * 60 * 60
         });
 
+        // Trigger automation for login event
+        await AutomationService.triggerAutomation('login', {
+            userId: user._id,
+            email: user.email,
+            fullName: user.fullName,
+            role: user.role?.name
+        }, request.server);
+
         return reply.send({ message: 'Login successful', accessToken, user });
     } catch (err) {
         return reply.code(500).send({ message: 'Internal server error' });

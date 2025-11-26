@@ -6,7 +6,9 @@
   "author": "Nguyễn Phương Nam <119719970+npnamdev@users.noreply.github.com>",
   "license": "MIT",
   "scripts": {
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "build": "node src/index.js",
+    "debug": "node debug.js"
   },
   "dependencies": {
     "@fastify/auth": "^5.0.2",

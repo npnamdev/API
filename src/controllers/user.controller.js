@@ -1,4 +1,5 @@
 const User = require('../models/user.model');
+const AutomationService = require('../services/automation.service');
 
 
 exports.createUser = async (request, reply) => {
@@ -214,6 +215,13 @@ exports.deleteUserById = async (request, reply) => {
         }
 
         await User.findByIdAndDelete(request.params.id);
+
+        // Trigger automation for user deleted event
+        await AutomationService.triggerAutomation('user_deleted', {
+            userId: request.params.id,
+            deletedBy: request.user?.id // assuming request.user is set by auth middleware
+        }, request.server);
+
         reply.send({ status: 'success', message: 'User deleted successfully' });
     } catch (error) {
         reply.internalServerError(error.message || 'Internal Server Error');
@@ -249,6 +257,12 @@ exports.deleteMultipleUsers = async (request, reply) => {
         // Delete the allowed users
         const deletableIds = deletableUsers.map(user => user._id);
         const deleteResult = await User.deleteMany({ _id: { $in: deletableIds } });
+
+        // Trigger automation for user deleted event
+        await AutomationService.triggerAutomation('user_deleted', {
+            userIds: deletableIds,
+            deletedBy: request.user?.id
+        }, request.server);
 
         const message = adminUsers.length > 0
             ? `Deleted ${deleteResult.deletedCount} users. Skipped ${adminUsers.length} admin user(s).`

@@ -1,5 +1,6 @@
 const Automation = require('../models/automation.model');
 const axios = require('axios');
+const Notification = require('../models/notification.model');
 
 exports.getAllAutomations = async (request, reply) => {
     try {
@@ -190,6 +191,8 @@ async function executeActions(actions, fastify) {
                 await sendEmailAction(action.config, fastify);
             } else if (action.type === 'http_request') {
                 await httpRequestAction(action.config);
+            } else if (action.type === 'notification') {
+                await sendNotificationAction(action.config, fastify);
             }
         } catch (error) {
             console.error(`Error executing action ${action.type}:`, error);
@@ -216,11 +219,24 @@ async function httpRequestAction(config) {
     await axios(options);
 }
 
+// Send notification action
+async function sendNotificationAction(config, fastify) {
+    const { message, type = 'info' } = config;
+    const notification = new Notification({
+        message,
+        type
+    });
+
+    await notification.save();
+    fastify.io.emit('notify', notification);
+}
+
 // Sanitize actions config based on type
 function sanitizeActions(actions) {
     const actionConfigs = {
         send_email: ['to', 'subject', 'text', 'html'],
-        http_request: ['method', 'url', 'headers', 'body']
+        http_request: ['method', 'url', 'headers', 'body'],
+        notification: ['message', 'type']
     };
 
     return actions.map(action => {

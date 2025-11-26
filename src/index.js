@@ -82,11 +82,7 @@ fastify.register(require('./routes/cart.route'), { prefix: process.env.API_PREFI
 fastify.register(require('./routes/heroBanner.route'), { prefix: (process.env.API_PREFIX || '/api') });
 fastify.register(require('./routes/testimonial.route'), { prefix: (process.env.API_PREFIX || '/api') });
 fastify.register(require('./routes/faq.route'), { prefix: (process.env.API_PREFIX || '/api') });
-
-
 fastify.register(require('./routes/oauth.route'));
-// fastify.register(require('./routes/googleAuth.route'), { prefix: process.env.API_PREFIX || '/api' });
-
 
 fastify.get('/ping', async (request, reply) => { reply.code(200).send('pong') });
 fastify.get('/viewer', (req, reply) => { return reply.sendFile('viewer.html'); });
