@@ -6,7 +6,6 @@ async function courseRoutes(fastify, options) {
     fastify.get('/courses/slug/:slug', courseController.getCourseBySlug);
     fastify.get('/courses/:id/full-detail', courseController.getCourseFullDetail);
     fastify.post('/courses', courseController.createCourse);
-    fastify.post('/courses/bulk', courseController.createManyCourses);
     fastify.put('/courses/:id', courseController.updateCourse);
     fastify.delete('/courses/:id', courseController.deleteCourse);
     fastify.delete('/courses', courseController.deleteMultipleCourses);

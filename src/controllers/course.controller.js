@@ -3,75 +3,55 @@ const Chapter = require('../models/chapter.model');
 const Lesson = require('../models/lesson.model');
 const Item = require('../models/item.model');
 
-// Helper functions for duration calculation
-// Removed formatDuration as we now return raw seconds
-
-
 exports.getAllCourses = async (request, reply) => {
     try {
         const {
             page = 1,
             limit = 10,
             search = '',
-            sort = 'desc',
-            sortBy = 'createdAt',
             isPublished,
             status,
             category,
-            topic
+            topic,
         } = request.query;
 
         const pageNumber = Math.max(1, parseInt(page));
         const pageSize = Math.max(1, parseInt(limit));
         const skip = (pageNumber - 1) * pageSize;
-
-        // Xây dựng query filter
         const query = {};
 
-        // Xử lý search - tìm kiếm trong title, shortDescription, description và tags
         if (search) {
+            const regex = new RegExp(search, 'i');
             query.$or = [
-                { title: { $regex: search, $options: 'i' } },
-                { shortDescription: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } },
-                { tags: { $in: [new RegExp(search, 'i')] } }
+                { title: regex },
+                { shortDescription: regex },
+                { description: regex },
+                { tags: { $in: [regex] } },
             ];
         }
 
-        // Filter theo isPublished
         if (isPublished !== undefined) {
             query.isPublished = isPublished === 'true' || isPublished === true;
         }
 
-        // Filter theo status
-        if (status) {
-            query.status = status;
-        }
-
-        // Filter theo danh mục
-        if (category) {
-            query.category = category;
-        }
-
-        // Filter theo chủ đề
-        if (topic) {
-            query.topics = { $in: [topic] };
-        }
-
-        // Xử lý sort - Ưu tiên updatedAt mới nhất, rồi createdAt mới nhất
+        if (status) query.status = status;
+        if (category) query.category = category;
+        if (topic) query.topics = { $in: [topic] };
         const sortObj = { updatedAt: -1, createdAt: -1 };
 
-        // Thực hiện query
-        const courses = await Course.find(query)
-            .skip(skip)
-            .limit(pageSize)
-            .sort(sortObj)
-            .select('thumbnail title status isPublished createdAt updatedAt type');
+        const [courses, totalCourses] = await Promise.all([
+            Course.find(query)
+                .skip(skip)
+                .limit(pageSize)
+                .sort(sortObj)
+                .select('thumbnail title status isPublished createdAt updatedAt type'),
 
-        const totalCourses = await Course.countDocuments(query);
+            Course.countDocuments(query),
+        ]);
+
         const totalPages = Math.ceil(totalCourses / pageSize);
 
-        reply.send({
+        return reply.send({
             status: 'success',
             message: 'Courses retrieved successfully',
             data: courses,
@@ -87,60 +67,77 @@ exports.getAllCourses = async (request, reply) => {
                 status: status || null,
                 category: category || null,
                 topic: topic || null,
-                sort: 'updatedAt desc, createdAt desc' // Mô tả sort mặc định
+                sort: 'updatedAt desc, createdAt desc',
             }
         });
+
     } catch (error) {
-        reply.code(500).send({
+        return reply.code(500).send({
             status: 'error',
             message: error.message || 'Server error',
         });
     }
 };
 
-
 exports.getCourseById = async (req, reply) => {
     try {
         const { id } = req.params;
 
-        if (!id) {
+        if (!id.match(/^[0-9a-fA-F]{24}$/)) {
             return reply.code(400).send({ error: "Invalid course ID" });
         }
 
+        // 1) Query course (tối ưu các field cần thiết)
         const course = await Course.findById(id)
             .populate("instructors", "fullName")
             .populate("category", "name")
             .populate("topics", "name")
-            .populate("relatedCourses", "title");
+            .populate("relatedCourses", "title")
+            .lean(); // BOOST SPEED: không convert sang mongoose document
 
         if (!course) {
             return reply.code(404).send({ error: "Course not found" });
         }
 
-        const chapters = await Chapter.find({ courseId: course._id }).sort({ order: 1 });
+        // 2) Lấy toàn bộ chapters 1 lần
+        const chapters = await Chapter.find({ courseId: id })
+            .sort({ order: 1 })
+            .lean();
 
-        const chaptersWithLessonCount = await Promise.all(
-            chapters.map(async (chapter) => {
-                const lessons = await Lesson.find({ chapterId: chapter._id })
-                    .sort({ order: 1 })
-                    .select("title order");
+        const chapterIds = chapters.map((c) => c._id);
 
-                return {
-                    _id: chapter._id,
-                    title: chapter.title,
-                    order: chapter.order,
-                    lessonCount: lessons.length,
-                    lessons,
-                };
-            })
-        );
+        // 3) Lấy toàn bộ lessons của tất cả chapters chỉ bằng 1 query
+        const lessons = await Lesson.find({ chapterId: { $in: chapterIds } })
+            .sort({ order: 1 })
+            .select("title order chapterId")
+            .lean();
 
-        reply.send({
-            ...course.toObject(),
+        // 4) Gom lesson vào chapter — KHÔNG dùng Promise.all => nhanh hơn
+        const lessonsByChapter = {};
+        for (const chapter of chapterIds) {
+            lessonsByChapter[chapter] = [];
+        }
+
+        for (const lesson of lessons) {
+            lessonsByChapter[lesson.chapterId]?.push(lesson);
+        }
+
+        // 5) Ghép chapters + lessons
+        const chaptersWithLessonCount = chapters.map((chapter) => ({
+            _id: chapter._id,
+            title: chapter.title,
+            order: chapter.order,
+            lessonCount: lessonsByChapter[chapter._id].length,
+            lessons: lessonsByChapter[chapter._id],
+        }));
+
+        // 6) Trả dữ liệu cuối
+        return reply.send({
+            ...course,
             chapters: chaptersWithLessonCount,
         });
     } catch (error) {
-        console.error(error);
+        console.error("GET COURSE BY ID ERROR:", error);
         reply.code(500).send({ error: "Server error" });
     }
 };
@@ -156,11 +153,13 @@ exports.getCourseBySlug = async (req, reply) => {
             });
         }
 
+        // 1️⃣ Lấy course
         const course = await Course.findOne({ slug })
             .populate("instructors", "fullName email avatar")
             .populate("category", "name slug")
             .populate("topics", "name slug")
-            .populate("relatedCourses", "title slug thumbnail originalPrice salePrice");
+            .populate("relatedCourses", "title slug thumbnail originalPrice salePrice")
+            .lean();
 
         if (!course) {
             return reply.code(404).send({
@@ -169,74 +168,76 @@ exports.getCourseBySlug = async (req, reply) => {
             });
         }
 
-        // Kiểm tra khóa học có được public không
-        // if (!course.isPublished || course.status !== 'published') {
-        //     return reply.code(403).send({
-        //         status: 'error',
-        //         message: "Course is not available"
-        //     });
-        // }
+        // 2️⃣ Lấy toàn bộ chapters
+        const chapters = await Chapter.find({ courseId: course._id })
+            .sort({ order: 1 })
+            .lean();
 
-        const chapters = await Chapter.find({ courseId: course._id }).sort({ order: 1 });
+        const chapterIds = chapters.map(ch => ch._id);
 
-        const chaptersWithLessons = await Promise.all(
-            chapters.map(async (chapter) => {
-                const lessons = await Lesson.find({ chapterId: chapter._id })
-                    .sort({ order: 1 })
-                    .select("title order duration videoUrl isPreviewAllowed type");
+        // 3️⃣ Lấy toàn bộ lessons theo chapterIds
+        const lessons = await Lesson.find({ chapterId: { $in: chapterIds } })
+            .sort({ order: 1 })
+            .select("title order duration videoUrl isPreviewAllowed type chapterId")
+            .lean();
 
-                // Collect video URLs for type 'video' to fetch durations from Items
-                const videoUrls = lessons.filter(lesson => lesson.type === 'video').map(lesson => lesson.videoUrl);
-                const items = videoUrls.length > 0 ? await Item.find({ url: { $in: videoUrls } }).select('url duration') : [];
-                const itemDurationMap = new Map(items.map(item => [item.url, item.duration]));
+        // 4️⃣ Lấy durations cho bài video (Items)
+        const videoUrls = lessons
+            .filter(l => l.type === "video")
+            .map(l => l.videoUrl);
 
-                // Assign durations to lessons
-                const lessonsWithDuration = lessons.map(lesson => {
-                    if (lesson.type === 'video' && itemDurationMap.has(lesson.videoUrl)) {
-                        lesson.duration = itemDurationMap.get(lesson.videoUrl);
-                    }
-                    // Only include videoUrl if preview is allowed
-                    if (!lesson.isPreviewAllowed) {
-                        lesson.videoUrl = null;
-                    }
-                    return lesson;
-                });
+        const items = videoUrls.length
+            ? await Item.find({ url: { $in: videoUrls } }).select("url duration").lean()
+            : [];
 
-                const totalSeconds = lessonsWithDuration.reduce((sum, lesson) => sum + (lesson.duration || 0), 0);
+        const durationMap = new Map(items.map(i => [i.url, i.duration]));
 
-                return {
-                    _id: chapter._id,
-                    title: chapter.title,
-                    description: chapter.description,
-                    order: chapter.order,
-                    lessonCount: lessons.length,
-                    duration: totalSeconds,
-                    lessons: lessonsWithDuration,
-                };
-            })
+        // 5️⃣ Gán duration + remove videoUrl nếu không được xem preview
+        const lessonsProcessed = lessons.map(lesson => {
+            if (lesson.type === "video") {
+                lesson.duration = durationMap.get(lesson.videoUrl) || 0;
+                if (!lesson.isPreviewAllowed) lesson.videoUrl = null;
+            }
+            return lesson;
+        });
+
+        // 6️⃣ Gộp lessons vào chapters
+        const chaptersWithLessons = chapters.map(ch => {
+            const ls = lessonsProcessed.filter(l => l.chapterId.toString() === ch._id.toString());
+            const totalSeconds = ls.reduce((s, l) => s + (l.duration || 0), 0);
+
+            return {
+                ...ch,
+                lessonCount: ls.length,
+                duration: totalSeconds,
+                lessons: ls,
+            };
+        });
+
+        // 7️⃣ Tổng thời lượng toàn khóa học
+        const totalCourseDuration = chaptersWithLessons.reduce(
+            (sum, ch) => sum + (ch.duration || 0),
+            0
         );
 
-        // Tính tổng duration của toàn bộ khóa học
-        const totalCourseDuration = chaptersWithLessons.reduce((sum, chapter) => sum + (chapter.duration || 0), 0);
-
-        reply.send({
+        return reply.send({
             status: 'success',
             message: 'Course retrieved successfully',
             data: {
-                ...course.toObject(),
+                ...course,
                 duration: totalCourseDuration,
-                chapters: chaptersWithLessons,
+                chapters: chaptersWithLessons
             }
         });
+
     } catch (error) {
         console.error(error);
-        reply.code(500).send({
+        return reply.code(500).send({
             status: 'error',
             message: "Server error"
         });
     }
 };
-
 
 exports.createCourse = async (req, reply) => {
     try {
@@ -250,18 +251,69 @@ exports.createCourse = async (req, reply) => {
 
 exports.updateCourse = async (req, reply) => {
     try {
-        const updatedCourse = await Course.findByIdAndUpdate(req.params.id, req.body, {
-            new: true,
-            runValidators: true,
-        });
+        const courseId = req.params.id;
+        let payload = req.body;
+
+        if (!courseId) {
+            return reply.code(400).send({ error: "Invalid course ID" });
+        }
+
+        // ⚡ Only allow fields that can be updated
+        const allowedFields = [
+            "title",
+            "slug",
+            "description",
+            "shortDescription",
+            "thumbnail",
+            "price",
+            "salePrice",
+            "discount",
+            "category",
+            "topics",
+            "instructors",
+            "tags",
+            "isPublished",
+            "status",
+            "level",
+            "language",
+            "accessDuration",
+            "badge",
+        ];
+
+        const updateData = {};
+
+        // ⚡ Filter only valid fields & non-undefined
+        for (const field of allowedFields) {
+            if (payload[field] !== undefined) {
+                updateData[field] = payload[field];
+            }
+        }
+
+        // ❗ Prevent updating with empty body
+        if (Object.keys(updateData).length === 0) {
+            return reply.code(400).send({ error: "No valid fields to update" });
+        }
+
+        // ⚡ Update only changed fields
+        const updatedCourse = await Course.findByIdAndUpdate(
+            courseId,
+            { $set: updateData },
+            { new: true }
+        ).lean();
 
         if (!updatedCourse) {
             return reply.code(404).send({ error: "Course not found" });
         }
 
-        reply.send(updatedCourse);
+        return reply.send({
+            status: "success",
+            message: "Course updated successfully",
+            data: updatedCourse
+        });
+
     } catch (error) {
-        reply.code(400).send({ error: error.message });
+        console.error(error);
+        return reply.code(500).send({ error: "Server error" });
     }
 };
 
@@ -394,20 +446,3 @@ exports.getCourseFullDetail = async (req, reply) => {
         return reply.code(500).send({ message: 'Internal server error' });
     }
 };
-
-exports.createManyCourses = async (req, reply) => {
-    try {
-        const courses = req.body;
-
-        if (!Array.isArray(courses) || courses.length === 0) {
-            return reply.code(400).send({ error: 'Request body must be a non-empty array of courses' });
-        }
-
-        const createdCourses = await Course.insertMany(courses);
-        reply.code(201).send(createdCourses);
-    } catch (error) {
-        reply.code(400).send({ error: error.message });
-    }
-};
-
-

@@ -4,32 +4,25 @@ const Order = require('../models/order.model');
 
 const getStatistics = async (req, reply) => {
     try {
-        const totalUsers = await User.countDocuments();
-        const totalCourses = await Course.countDocuments();
-        const totalOrders = await Order.countDocuments();
-
-        const totalRevenueData = await Order.aggregate([
-            {
-                $group: {
-                    _id: null,
-                    total: { $sum: '$totalPrice' }
-                }
-            }
+        const [totalUsers, totalCourses, totalOrders, totalRevenueData] = await Promise.all([
+            User.estimatedDocumentCount(),
+            Course.estimatedDocumentCount(),
+            Order.estimatedDocumentCount(),
+            Order.aggregate([
+                { $group: { _id: null, total: { $sum: "$totalPrice" } } }
+            ])
         ]);
-        const totalRevenue = totalRevenueData[0]?.total || 0;
 
         reply.send({
             totalUsers,
             totalCourses,
             totalOrders,
-            totalRevenue
+            totalRevenue: totalRevenueData[0]?.total || 0
         });
+
     } catch (err) {
-        console.error(err);
-        reply.status(500).send({ error: 'Server error' });
+        reply.status(500).send({ error: "Server error" });
     }
 };
 
-module.exports = {
-    getStatistics,
-};
+module.exports = { getStatistics };
