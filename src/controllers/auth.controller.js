@@ -12,71 +12,41 @@ const AutomationService = require('../services/automation.service');
 exports.login = async (request, reply) => {
     try {
         const { email, password } = request.body;
-        if (!email || !password) {
-            return reply.code(400).send({ message: 'Email and password are required' });
-        }
+        if (!email || !password) return reply.code(400).send({ message: 'Email và mật khẩu là bắt buộc' });
 
         const user = await User.findOne({ email }).populate({ path: 'role', select: 'name' });
 
-
         if (!user || !(await bcrypt.compare(password, user.password))) {
-            return reply.code(400).send({ message: 'Invalid credentials' });
+            return reply.code(400).send({ message: 'Sai email hoặc mật khẩu' });
         }
 
-        if (!user.isVerified) {
-            return reply.code(403).send({ message: 'Please verify your email before logging in.' });
-        }
+        if (!user.isVerified) return reply.code(403).send({ message: 'Vui lòng xác minh email' });
 
-        if (user.role && user.role.name.toLowerCase() === 'admin') {
-            const ipAddress = request.ip;
-            const userAgent = request.headers['user-agent'] || 'Unknown device';
-            const parser = new UAParser();
-            parser.setUA(userAgent);
-            const uaResult = parser.getResult();
-            const loginTime = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-
+        // Admin login notification
+        if (user.role?.name.toLowerCase() === 'admin') {
+            const parser = new UAParser(request.headers['user-agent'] || '');
+            const ua = parser.getResult();
             const notification = new Notification({
                 message: `Đăng nhập từ IP ${request.ip}, thiết bị: ${ua.device.vendor || 'Unknown'} ${ua.device.model || ''}, trình duyệt: ${ua.browser.name || ''}. Nếu không phải bạn, hãy đổi mật khẩu.`,
                 type: 'warning',
                 status: 'unread',
             });
-
             await notification.save();
             request.server.io.emit('notify', notification);
         }
 
-
-        const accessToken = await reply.jwtSign(
-            { id: user._id },
-            { expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || '15m' }
-        );
-
-        const refreshToken = await reply.jwtSign(
-            { id: user._id },
-            { expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '7d' }
-        );
-
+        const accessToken = await reply.jwtSign({ id: user._id }, { expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || '15m' });
+        const refreshToken = await reply.jwtSign({ id: user._id }, { expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || '7d' });
 
         reply.setCookie('refreshToken', refreshToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'None',
-            path: '/',
-            domain: '.wedly.info',
-            maxAge: 7 * 24 * 60 * 60
+            httpOnly: true, secure: true, sameSite: 'None', path: '/', domain: '.wedly.info', maxAge: 7 * 24 * 60 * 60
         });
 
-        // Trigger automation for login event
-        await AutomationService.triggerAutomation('login', {
-            userId: user._id,
-            email: user.email,
-            fullName: user.fullName,
-            role: user.role?.name
-        }, request.server);
+        await AutomationService.triggerAutomation('login', { userId: user._id, email: user.email, fullName: user.fullName, role: user.role?.name }, request.server);
 
-        return reply.send({ message: 'Login successful', accessToken, user });
+        return reply.send({ message: 'Đăng nhập thành công', accessToken, user });
     } catch (err) {
-        return reply.code(500).send({ message: 'Internal server error' });
+        return reply.code(500).send({ message: 'Lỗi server' });
     }
 };
 
