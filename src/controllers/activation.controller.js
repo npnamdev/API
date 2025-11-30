@@ -29,7 +29,8 @@ exports.getAllActivationCodes = async (req, reply) => {
             .limit(pageSize)
             .sort({ createdAt: sortOrder })
             .populate('course', 'title')
-            .populate('createdBy', 'fullName email');
+            .populate('createdBy', 'fullName email')
+            .lean();
 
         const total = await ActivationCode.countDocuments(searchQuery);
         const totalPages = Math.ceil(total / pageSize);

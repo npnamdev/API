@@ -41,7 +41,7 @@ exports.getAllRoles = async (request, reply) => {
             .skip(skip)
             .limit(pageSize)
             .sort({ createdAt: sortOrder })
-            .populate('permissions', 'name');
+            .populate('permissions', 'name').lean();
 
         const rolesWithUserCount = await Promise.all(
             roles.map(async (role) => {

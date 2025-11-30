@@ -34,7 +34,8 @@ exports.getAllContacts = async (req, reply) => {
     const contacts = await Contact.find(searchQuery)
       .skip(skip)
       .limit(pageSize)
-      .sort({ createdAt: sortOrder });
+      .sort({ createdAt: sortOrder })
+      .lean();
 
     const totalContacts = await Contact.countDocuments(searchQuery);
     const totalPages = Math.ceil(totalContacts / pageSize);

@@ -27,7 +27,7 @@ exports.getPermissions = async (request, reply) => {
         const permissions = await Permission.find(searchQuery)
             .skip(skip)
             .limit(pageSize)
-            .sort({ order: sortOrder, createdAt: sortOrder });
+            .sort({ order: sortOrder, createdAt: sortOrder }).lean();
 
         const totalPermissions = await Permission.countDocuments(searchQuery);
         const totalPages = Math.ceil(totalPermissions / pageSize);

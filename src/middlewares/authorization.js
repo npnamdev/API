@@ -4,7 +4,6 @@ function checkPermission(permissionName) {
   return async function (request, reply) {
     try {
       const userId = request.user?.id;
-      console.log("check", userId);
 
       if (!userId) {
         return reply.code(401).send({ status: 'error', message: 'Unauthorized' });

@@ -34,7 +34,7 @@ exports.createMaterial = async (req, reply) => {
 exports.getMaterialsByCourse = async (req, reply) => {
     try {
         const { courseId } = req.params;
-        const materials = await CourseMaterial.find({ courseId }).sort("order");
+        const materials = await CourseMaterial.find({ courseId }).sort("order").lean();
         reply.send(materials);
     } catch (err) {
         reply.code(500).send({ error: err.message });

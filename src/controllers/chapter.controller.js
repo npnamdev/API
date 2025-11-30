@@ -13,7 +13,8 @@ exports.getChaptersWithLessons = async (req, reply) => {
             chapters.map(async (chapter) => {
                 const lessons = await Lesson.find({ chapterId: chapter._id })
                     .sort({ order: 1 })
-                    .select('_id title order'); // chỉ lấy các field cần thiết
+                    .select('_id title order')
+                    .lean(); // chỉ lấy các field cần thiết
 
                 return {
                     _id: chapter._id,

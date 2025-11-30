@@ -241,6 +241,7 @@ async function getItemsByParent(req, reply) {
         .sort(sortOption)
         .skip(skip)
         .limit(limit)
+        .lean()
     ]);
 
     const pages = Math.ceil(total / limit);

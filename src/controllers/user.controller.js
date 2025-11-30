@@ -133,7 +133,7 @@ exports.getAllUsers = async (request, reply) => {
             .skip(skip)
             .limit(limit)
             .sort({ [sortBy]: sortOrder })
-            .populate({ path: 'role', select: 'label -_id' });
+            .populate({ path: 'role', select: 'label -_id' }).lean();
 
         return reply.send({
             success: true,

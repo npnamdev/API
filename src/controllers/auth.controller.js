@@ -36,16 +36,7 @@ exports.login = async (request, reply) => {
             const loginTime = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
 
             const notification = new Notification({
-                message: `
-                <span class="text-gray-800">
-                    <span class="text-yellow-600 font-medium">Phát hiện đăng nhập từ thiết bị lạ</span> 
-                    từ IP <strong class="text-blue-600">${ipAddress}</strong> vào lúc <strong>${loginTime}</strong>.<br/>
-                    Thiết bị: <strong>${uaResult.device.vendor || 'Unknown'} ${uaResult.device.model || ''} (${uaResult.device.type || 'Unknown'})</strong>.<br/>
-                    Trình duyệt: <strong>${uaResult.browser.name} ${uaResult.browser.version}</strong>.<br/>
-                    Hệ điều hành: <strong>${uaResult.os.name} ${uaResult.os.version}</strong>.<br/>
-                    Nếu không phải bạn, hãy <span class="text-red-600">đổi mật khẩu ngay</span> để đảm bảo an toàn.
-                </span>
-                `,
+                message: `Đăng nhập từ IP ${request.ip}, thiết bị: ${ua.device.vendor || 'Unknown'} ${ua.device.model || ''}, trình duyệt: ${ua.browser.name || ''}. Nếu không phải bạn, hãy đổi mật khẩu.`,
                 type: 'warning',
                 status: 'unread',
             });
@@ -118,7 +109,6 @@ exports.refreshToken = async (request, reply) => {
         );
         return reply.send({ accessToken });
     } catch (err) {
-        console.error("Refresh token invalid or expired:", err.message);
         return reply.status(403).send({
             error: 'Invalid or expired refresh token',
             code: err.message === 'jwt expired' ? 'REFRESH_TOKEN_EXPIRED' : 'REFRESH_TOKEN_INVALID'
@@ -155,7 +145,7 @@ exports.register = async (request, reply) => {
 
         await user.save();
 
-        const verifyUrl = `https://quizify.wedly.info/verify-email?token=${verificationToken}`;
+        const verifyUrl = `https://new.wedly.info/verify-email?token=${verificationToken}`;
         await sendEmail({
             to: email,
             subject: 'Xác minh email của bạn',
