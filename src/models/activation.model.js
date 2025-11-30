@@ -6,11 +6,10 @@ const ActivationCodeSchema = new mongoose.Schema({
     codeType: { type: String, enum: ['single', 'multi'], default: 'single' }, // Loại mã
     quantity: { type: Number, default: 1 }, // Tổng số lượt dùng
     used: { type: Number, default: 0 }, // Đã sử dụng
-    isActive: { type: Boolean, default: true }, // Đang hoạt động?
     expiresAt: { type: Date, required: true }, // Ngày hết hạn
     status: { type: String, enum: ['unused', 'used', 'expired'], default: 'unused' }, // Trạng thái
     usageDays: { type: Number, default: 30 }, // Số ngày học sau khi kích hoạt
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true } // Người tạo
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false } // Người tạo
 }, {
     timestamps: true
 });
