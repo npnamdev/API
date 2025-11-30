@@ -27,7 +27,8 @@ exports.getAllCategories = async (req, reply) => {
     const categories = await Category.find(searchQuery)
       .skip(skip)
       .limit(pageSize)
-      .sort({ createdAt: sortOrder });
+      .sort({ createdAt: sortOrder })
+      .lean();
 
     const totalCategories = await Category.countDocuments(searchQuery);
     const totalPages = Math.ceil(totalCategories / pageSize);

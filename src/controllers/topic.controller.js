@@ -27,7 +27,8 @@ exports.getAllTopics = async (req, reply) => {
     const topics = await Topic.find(searchQuery)
       .skip(skip)
       .limit(pageSize)
-      .sort({ createdAt: sortOrder });
+      .sort({ createdAt: sortOrder })
+      .lean();
 
     const totalTopics = await Topic.countDocuments(searchQuery);
     const totalPages = Math.ceil(totalTopics / pageSize);

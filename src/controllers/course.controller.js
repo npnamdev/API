@@ -2,6 +2,8 @@ const Course = require('../models/course.model');
 const Chapter = require('../models/chapter.model');
 const Lesson = require('../models/lesson.model');
 const Item = require('../models/item.model');
+const mongoose = require('mongoose');
+
 
 exports.getAllCourses = async (request, reply) => {
     try {
@@ -341,80 +343,138 @@ exports.deleteMultipleCourses = async (req, reply) => {
 };
 
 exports.duplicateCourse = async (req, reply) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
     try {
         const courseId = req.params.id;
-
         const course = await Course.findById(courseId)
-            .populate({ path: 'category', select: '_id' })
-            .populate({ path: 'instructors', select: '_id' });
+            .populate('category', '_id')
+            .populate('instructors', '_id')
+            .lean();
 
-        if (!course) {
-            return reply.code(404).send({ message: 'Course not found' });
-        }
+        if (!course) return reply.code(404).send({ message: 'Course not found' });
 
         const newCourse = new Course({
+            ...course,
             title: course.title + ' (Copy)',
-            slug: course.slug + '-' + Date.now(), // Tạo slug mới tránh trùng
-            description: course.description,
-            thumbnail: course.thumbnail,
-            price: course.price,
-            discount: course.discount,
-            category: course.category?._id || null,
-            level: course.level,
-            language: course.language,
-            instructors: course.instructors.map(i => i._id),
-            tags: course.tags,
+            slug: course.slug + '-' + Date.now(),
             isPublished: false,
             status: 'draft',
-            accessDuration: course.accessDuration,
-            badge: course.badge,
-            chapters: [], // sẽ cập nhật sau
+            chapters: [],
         });
 
-        await newCourse.save();
+        await newCourse.save({ session });
 
-        // ✅ Clone Chapter & Lesson
-        const oldChapters = await Chapter.find({ courseId }).sort({ order: 1 });
-        const chapterMap = new Map();
+        const oldChapters = await Chapter.find({ courseId }).sort({ order: 1 }).lean();
+        const chapterDocs = oldChapters.map(ch => ({
+            ...ch,
+            _id: mongoose.Types.ObjectId(),
+            courseId: newCourse._id
+        }));
 
-        for (const oldChapter of oldChapters) {
-            const newChapter = new Chapter({
-                courseId: newCourse._id,
-                title: oldChapter.title,
-                description: oldChapter.description,
-                order: oldChapter.order,
-            });
-            await newChapter.save();
-            chapterMap.set(oldChapter._id.toString(), newChapter._id);
+        const newChapters = await Chapter.insertMany(chapterDocs, { session });
 
-            // Clone bài học (lessons) trong chapter đó
-            const oldLessons = await Lesson.find({ chapterId: oldChapter._id });
-            for (const oldLesson of oldLessons) {
-                const newLesson = new Lesson({
-                    chapterId: newChapter._id,
-                    title: oldLesson.title,
-                    content: oldLesson.content,
-                    videoUrl: oldLesson.videoUrl,
-                    duration: oldLesson.duration,
-                    type: oldLesson.type,
-                    order: oldLesson.order,
-                    isPreviewAllowed: oldLesson.isPreviewAllowed,
-                });
-                await newLesson.save();
-            }
+        const oldLessons = await Lesson.find({ chapterId: { $in: oldChapters.map(ch => ch._id) } }).lean();
+        const lessonDocs = oldLessons.map(lesson => ({
+            ...lesson,
+            _id: mongoose.Types.ObjectId(),
+            chapterId: newChapters.find(ch => ch.order === oldChapters.find(oc => oc._id.equals(lesson.chapterId)).order)._id
+        }));
 
-            newCourse.chapters.push(newChapter._id);
-        }
+        await Lesson.insertMany(lessonDocs, { session });
 
-        await newCourse.save();
+        newCourse.chapters = newChapters.map(ch => ch._id);
+        await newCourse.save({ session });
+
+        await session.commitTransaction();
+        session.endSession();
 
         return reply.send({ message: 'Course duplicated successfully', course: newCourse });
 
-    } catch (error) {
-        console.error(error);
+    } catch (err) {
+        await session.abortTransaction();
+        session.endSession();
+        console.error(err);
         return reply.code(500).send({ message: 'Internal server error' });
     }
 };
+
+// exports.duplicateCourse = async (req, reply) => {
+//     try {
+//         const courseId = req.params.id;
+
+//         const course = await Course.findById(courseId)
+//             .populate({ path: 'category', select: '_id' })
+//             .populate({ path: 'instructors', select: '_id' });
+
+//         if (!course) {
+//             return reply.code(404).send({ message: 'Course not found' });
+//         }
+
+//         const newCourse = new Course({
+//             title: course.title + ' (Copy)',
+//             slug: course.slug + '-' + Date.now(), // Tạo slug mới tránh trùng
+//             description: course.description,
+//             thumbnail: course.thumbnail,
+//             price: course.price,
+//             discount: course.discount,
+//             category: course.category?._id || null,
+//             level: course.level,
+//             language: course.language,
+//             instructors: course.instructors.map(i => i._id),
+//             tags: course.tags,
+//             isPublished: false,
+//             status: 'draft',
+//             accessDuration: course.accessDuration,
+//             badge: course.badge,
+//             chapters: [], // sẽ cập nhật sau
+//         });
+
+//         await newCourse.save();
+
+//         // ✅ Clone Chapter & Lesson
+//         const oldChapters = await Chapter.find({ courseId }).sort({ order: 1 });
+//         const chapterMap = new Map();
+
+//         for (const oldChapter of oldChapters) {
+//             const newChapter = new Chapter({
+//                 courseId: newCourse._id,
+//                 title: oldChapter.title,
+//                 description: oldChapter.description,
+//                 order: oldChapter.order,
+//             });
+//             await newChapter.save();
+//             chapterMap.set(oldChapter._id.toString(), newChapter._id);
+
+//             // Clone bài học (lessons) trong chapter đó
+//             const oldLessons = await Lesson.find({ chapterId: oldChapter._id });
+//             for (const oldLesson of oldLessons) {
+//                 const newLesson = new Lesson({
+//                     chapterId: newChapter._id,
+//                     title: oldLesson.title,
+//                     content: oldLesson.content,
+//                     videoUrl: oldLesson.videoUrl,
+//                     duration: oldLesson.duration,
+//                     type: oldLesson.type,
+//                     order: oldLesson.order,
+//                     isPreviewAllowed: oldLesson.isPreviewAllowed,
+//                 });
+//                 await newLesson.save();
+//             }
+
+//             newCourse.chapters.push(newChapter._id);
+//         }
+
+//         await newCourse.save();
+
+//         return reply.send({ message: 'Course duplicated successfully', course: newCourse });
+
+//     } catch (error) {
+//         console.error(error);
+//         return reply.code(500).send({ message: 'Internal server error' });
+//     }
+// };
 
 exports.getCourseFullDetail = async (req, reply) => {
     try {
