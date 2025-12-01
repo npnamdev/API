@@ -37,29 +37,51 @@ exports.getAllRoles = async (request, reply) => {
         const searchQuery = search ? { name: { $regex: search, $options: 'i' } } : {};
         const sortOrder = sort === 'asc' ? 1 : -1;
 
-        const roles = await Role.find(searchQuery)
-            .skip(skip)
-            .limit(pageSize)
-            .sort({ createdAt: sortOrder })
-            .populate('permissions', 'name').lean();
+        const [rolesResult, totalRoles] = await Promise.all([
+            Role.aggregate([
+                { $match: searchQuery },
+                {
+                    $lookup: {
+                        from: 'users',
+                        let: { roleId: '$_id' },
+                        pipeline: [
+                            { $match: { $expr: { $eq: ['$role', '$$roleId'] } } },
+                            { $count: 'userCount' }
+                        ],
+                        as: 'userCountData'
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'permissions',
+                        localField: 'permissions',
+                        foreignField: '_id',
+                        as: 'permissions'
+                    }
+                },
+                {
+                    $project: {
+                        name: 1,
+                        description: 1,
+                        createdAt: 1,
+                        updatedAt: 1,
+                        permissionCount: { $size: '$permissions' },
+                        userCount: { $ifNull: [{ $arrayElemAt: ['$userCountData.userCount', 0] }, 0] }
+                    }
+                },
+                { $sort: { createdAt: sortOrder } },
+                { $skip: skip },
+                { $limit: pageSize }
+            ]),
+            Role.countDocuments(searchQuery)
+        ]);
 
-        const rolesWithUserCount = await Promise.all(
-            roles.map(async (role) => {
-                const userCount = await User.countDocuments({ role: role._id });
-                return {
-                    ...role.toObject(),
-                    userCount,
-                };
-            })
-        );
-
-        const totalRoles = await Role.countDocuments(searchQuery);
         const totalPages = Math.ceil(totalRoles / pageSize);
 
         reply.send({
             status: 'success',
             message: 'Roles retrieved successfully',
-            data: rolesWithUserCount,
+            data: rolesResult,
             pagination: {
                 currentPage: pageNumber,
                 totalPages,

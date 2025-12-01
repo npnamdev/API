@@ -1,14 +1,13 @@
 const ActivationCode = require('../models/activation.model');
 const Enrollment = require('../models/enrollment.model');
 
+
 exports.getAllActivationCodes = async (req, reply) => {
     try {
         const {
             page = 1,
             limit = 10,
             search = '',
-            status,
-            isActive,
             sort = 'desc',
         } = req.query;
 
@@ -18,8 +17,6 @@ exports.getAllActivationCodes = async (req, reply) => {
 
         const searchQuery = {
             ...(search ? { code: { $regex: search, $options: 'i' } } : {}),
-            ...(status ? { status } : {}),
-            ...(isActive !== undefined ? { isActive: isActive === 'true' } : {}),
         };
 
         const sortOrder = sort === 'asc' ? 1 : -1;
@@ -29,7 +26,6 @@ exports.getAllActivationCodes = async (req, reply) => {
             .limit(pageSize)
             .sort({ createdAt: sortOrder })
             .populate('course', 'title')
-            .populate('createdBy', 'fullName email')
             .lean();
 
         const total = await ActivationCode.countDocuments(searchQuery);
@@ -62,7 +58,20 @@ exports.getActivationCodeById = async (req, reply) => {
 
 exports.createActivationCode = async (req, reply) => {
     try {
-        const newCode = new ActivationCode(req.body);
+        const { startDate, endDate, ...otherData } = req.body;
+
+        if (new Date(startDate) >= new Date(endDate)) {
+            return reply.code(400).send({
+                status: 'error',
+                message: 'startDate must be before endDate'
+            });
+        }
+
+        const newCode = new ActivationCode({
+            ...otherData,
+            startDate,
+            endDate
+        });
         await newCode.save();
         reply.code(201).send(newCode);
     } catch (err) {
@@ -111,10 +120,11 @@ exports.activateCourse = async (req, reply) => {
         }
 
         // Tìm mã kích hoạt
+        const currentDate = new Date();
         const activation = await ActivationCode.findOne({
             code,
-            isActive: true,
-            expiresAt: { $gt: new Date() }
+            startDate: { $lte: currentDate },
+            endDate: { $gte: currentDate }
         }).populate('course', 'title');
 
         if (!activation || activation.used >= activation.quantity) {
@@ -152,12 +162,6 @@ exports.activateCourse = async (req, reply) => {
 
         // Cập nhật activation code
         activation.used += 1;
-        if (activation.used >= activation.quantity) {
-            activation.status = 'used';
-            if (activation.codeType === 'single') {
-                activation.isActive = false;
-            }
-        }
         await activation.save();
 
         reply.send({
@@ -176,4 +180,3 @@ exports.activateCourse = async (req, reply) => {
         });
     }
 };
-

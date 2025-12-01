@@ -1,17 +1,23 @@
 const mongoose = require('mongoose');
 
 const ActivationCodeSchema = new mongoose.Schema({
-    code: { type: String, required: true, unique: true, trim: true }, // Mã kích hoạt
-    course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true }, // Khóa học
-    codeType: { type: String, enum: ['single', 'multi'], default: 'single' }, // Loại mã
-    quantity: { type: Number, default: 1 }, // Tổng số lượt dùng
-    used: { type: Number, default: 0 }, // Đã sử dụng
-    expiresAt: { type: Date, required: true }, // Ngày hết hạn
-    status: { type: String, enum: ['unused', 'used', 'expired'], default: 'unused' }, // Trạng thái
-    usageDays: { type: Number, default: 30 }, // Số ngày học sau khi kích hoạt
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false } // Người tạo
+    code: { type: String, required: true, unique: true, trim: true },
+    course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
+    codeType: { type: String, enum: ['single', 'multi'], default: 'single' },
+    quantity: { type: Number, default: 1 },
+    used: { type: Number, default: 0 },
+    usageDays: { type: Number, default: 30 },
+    startDate: { type: Date, required: true },
+    endDate: { type: Date, required: true }
 }, {
     timestamps: true
+});
+
+ActivationCodeSchema.pre('save', function (next) {
+    if (this.codeType === 'single') {
+        this.quantity = 1;
+    }
+    next();
 });
 
 module.exports = mongoose.model('ActivationCode', ActivationCodeSchema);
