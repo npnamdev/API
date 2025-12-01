@@ -13,8 +13,7 @@ exports.getAllAutomations = async (request, reply) => {
         const automations = await Automation.find(query)
             .sort({ createdAt: -1 })
             .skip(skip)
-            .limit(parseInt(limit))
-            .lean();
+            .limit(parseInt(limit));
 
         const total = await Automation.countDocuments(query);
 
