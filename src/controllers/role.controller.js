@@ -62,7 +62,7 @@ exports.getAllRoles = async (request, reply) => {
                 {
                     $project: {
                         name: 1,
-                        label: '$name', // thêm dòng này
+                        label: 1, // trả về label
                         description: 1,
                         createdAt: 1,
                         updatedAt: 1,
@@ -97,7 +97,6 @@ exports.getAllRoles = async (request, reply) => {
         });
     }
 };
-
 
 exports.getRoleById = async (request, reply) => {
     const { id } = request.params;
