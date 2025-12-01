@@ -62,6 +62,7 @@ exports.getAllRoles = async (request, reply) => {
                 {
                     $project: {
                         name: 1,
+                        label: '$name', // thêm dòng này
                         description: 1,
                         createdAt: 1,
                         updatedAt: 1,
